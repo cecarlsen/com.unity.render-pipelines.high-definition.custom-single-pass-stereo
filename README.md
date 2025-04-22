@@ -42,3 +42,5 @@ Based on HDRP 17.1.0 (April 2025).
 ## Notes
 
 First I tried to access XRPass.AssignView() and XRView using reflection, but I couldn't find a way to not generate a ton of garbage – hence the SRP Core edits.
+
+[Here](https://discussions.unity.com/t/custom-single-pass-stereo-matrices-in-hdrp-how) is the Unity Discussions thread that lead to the soltuion.
