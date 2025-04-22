@@ -6,6 +6,7 @@ The proper way to do this is by writing and compiling your own XR Provider plugi
 
 Based on HDRP 17.1.0 (April 2025).
 
+![HdrpCustomSinglePassStereo](https://github.com/cecarlsen/com.unity.render-pipelines.high-definition.custom-single-pass-stereo/blob/main/GithubImages~/HdrpCustomSinglePassStereo.png)
 
 ## How to avoid writing a plugin
 
