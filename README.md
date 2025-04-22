@@ -4,6 +4,8 @@ This is a workaround/hack for setting custom single-pass stereo view-projection 
 
 The proper way to do this is by writing and compiling your own XR Provider plugin.[Here](https://docs.unity3d.com/6000.1/Documentation/Manual/xrsdk-provider-setup.html) is the documentation and [here]((https://discussions.unity.com/t/using-unity-xr-sdk-to-build-my-own-ar-plug-in/904304/12)) is a much needed hint.
 
+Based on HDRP 17.1.0 (April 2025).
+
 
 ## How to avoid writing a plugin
 
