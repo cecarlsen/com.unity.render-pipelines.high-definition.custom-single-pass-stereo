@@ -4,7 +4,7 @@ USE AT YOUR OWN RISK.
 
 This is a workaround/hack for setting custom single-pass stereo view-projection (off-axis) matrices in HDRP. The approach is to use MockHMD to enable single-pass stereo, and then overwrite the view data it provides.
 
-The proper way to do this is by writing and compiling your own OpenXR provider (*[NOT]*(https://discussions.unity.com/t/using-unity-xr-sdk-to-build-my-own-ar-plug-in/904304/13) a XR Provider plugin). [Here](https://docs.unity3d.com/6000.1/Documentation/Manual/xrsdk-provider-setup.html) is the documentation and [here](https://discussions.unity.com/t/using-unity-xr-sdk-to-build-my-own-ar-plug-in/904304/12) is a much needed hint.
+The proper way to do this is by writing and compiling your own OpenXR provider ([NOT](https://discussions.unity.com/t/using-unity-xr-sdk-to-build-my-own-ar-plug-in/904304/13) a XR Provider plugin). [Here](https://docs.unity3d.com/6000.1/Documentation/Manual/xrsdk-provider-setup.html) is the documentation and [here](https://discussions.unity.com/t/using-unity-xr-sdk-to-build-my-own-ar-plug-in/904304/12) is a much needed hint.
 
 Based on HDRP 17.1.0 (April 2025).
 
