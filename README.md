@@ -36,7 +36,7 @@ Based on HDRP 17.1.0 (April 2025).
 
 ## Known issues
 
-- Setting a target RenderTexture on your camera will disable stereo rendering. I have no idea why. The target texture obviously has to mimic the default output texture, so Dimension 2DArray with two slices, Color Format B10G11B11_UFLOAT_PACK32, and Deepth Stencil Format D32_SFLOAT_S8_UINT. But if you assign such (or any) texture as target and check the Frame Profiler, you will see that the XR plugin events from MockHMD are gone. My best guess is that MockHMD checks if a target texture is set on the camera, and if so presumes we don't want stereo. The MockHMD C# does not mention a target texture anywhere, so it must happen in the DLL. Just great =(
+- Setting a target RenderTexture on your camera will disable stereo rendering. I have no idea why. The target texture obviously has to mimic the default output texture, so Dimension 2DArray with two slices, Color Format B10G11B11_UFLOAT_PACK32, and Depth Stencil Format D32_SFLOAT_S8_UINT. But if you assign such (or any) texture as target and check the Frame Profiler, you will see that the XR plugin events from MockHMD are gone. My best guess is that MockHMD checks if a target texture is set on the camera, and if so presumes we don't want stereo. The MockHMD C# does not mention a target texture anywhere, so it must happen in the DLL. Just great =(
 
 
 ## Notes
