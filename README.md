@@ -15,8 +15,8 @@ Based on HDRP 17.1.0 (April 2025).
 - Install *High Definition Render Pipeline* using the package manager. This will automatically install *Scriptable Render Pipeline Core*.
 - Close the Unity project and move *com.unity.render-pipelines.core* from /Library/PackageCache to /Packages (removing the @hashcode). Then open the project again.
 - Make these edits to *Scriptable Render Pipeline Core*:
-	- In /Runtime/XR/XRPass.css make the AssignView() method public.
 	- In /Runtime/XR/XRView.css make the class and the constructor public.
+	- In /Runtime/XR/XRPass.css make the AssignView() method public.
 - Install OffAxisCamera ([Asset Store](https://assetstore.unity.com/packages/tools/camera/offaxiscamera-98991)).
 - Install *XR Plugin Management* using the package manager or in the Project Settings->XR window.
 - Go to Project Settings->XR and install Mock HMD Loader. Then enable Initialize XR on Startup and choose SinglePass Instanced under MockHMD.
