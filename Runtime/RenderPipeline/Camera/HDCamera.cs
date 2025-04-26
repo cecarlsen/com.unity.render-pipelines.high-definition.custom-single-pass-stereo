@@ -5,7 +5,6 @@ using System.Linq;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 using Unity.Collections;
-using System.Reflection;
 
 namespace UnityEngine.Rendering.HighDefinition
 {
@@ -594,8 +593,10 @@ namespace UnityEngine.Rendering.HighDefinition
         // The issue is that this is called during culling which happens before Volume updates so we can't query it via volumes in there.
         internal SkyAmbientMode skyAmbientMode { get; private set; }
 
-		
-		// EDIT BEGIN ...
+        // XR multipass and instanced views are supported (see XRSystem)
+       //internal XRPass xr { get; private set; }
+
+	   		// EDIT BEGIN ...
 
 		//internal XRPass xr { get; private set; } // Original property.
 		XRPass _xr;
@@ -604,12 +605,6 @@ namespace UnityEngine.Rendering.HighDefinition
 		Matrix4x4 _prevViewLeft = Matrix4x4.identity;
 		Matrix4x4 _prevViewRight = Matrix4x4.identity;
 		bool _hasPrevView = false;
-		//static readonly Type[] xrViewConstructorArgsTypes = new Type[] { typeof( Matrix4x4 ), typeof( Matrix4x4 ), typeof( Matrix4x4 ), typeof( bool ), typeof( Rect ), typeof( Mesh ), typeof( int ) };
-		//ConstructorInfo _xrViewConstructorInfo;
-		//MethodInfo _assignViewMethodInfo;
-		//object[] _constructorArgs = new object[7]; // Just to reduce garbage slightly. This all sucks anyway though.
-		//object[] _assignViewArgs = new object[2];
-		//const BindingFlags bindingFalgs = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
 
 		public XRPass xr {
@@ -621,20 +616,47 @@ namespace UnityEngine.Rendering.HighDefinition
 				// Modding the HDCamera and overwriting xr everytime it is set seems to be the only way to get it to work, without writing a custom XR plugin.
 				_xr = value;
 
-				// Get internal XRView related methods from Core SRP using reflection. We don't want to modify that too!
-				//if( _xrViewConstructorInfo == null ){
-				//	var viewsField = typeof( XRPass ).GetField( "m_Views", bindingFalgs );
-				//	var xrViewType = viewsField.FieldType.GetGenericArguments()[0];
-				//	_xrViewConstructorInfo = xrViewType.GetConstructor( bindingFalgs, null, xrViewConstructorArgsTypes, null );
-				//	_assignViewMethodInfo = typeof( XRPass ).GetMethod( "AssignView", bindingFalgs );
-				//}
-
 				// In my case, I'll be using OffAxisCamera to compute the views.
 				if( !_offAxisCamera ) _offAxisCamera = camera.GetComponent<OffAxisCamera>();
 				
 				// An awkward way to store settings, but it works.
 				if( !_singlePassSetup ) _singlePassSetup = Object.FindFirstObjectByType<SinglePassStereoSetup>( FindObjectsInactive.Include );
 
+				// TEST: TRY TO ALSO ENABLE XR WHEN CAMERA HAS A TARGET TEXTURE
+				if( camera && camera.targetTexture && Application.isPlaying )
+				{
+					ScriptableCullingParameters cullingParams;
+					camera.TryGetCullingParameters( out cullingParams );
+					
+					var resolution = _singlePassSetup.eyeResolution;
+
+					var createInfo = new XRPassCreateInfo(){
+						renderTarget = new RenderTargetIdentifier( camera.targetTexture ),
+						renderTargetDesc = camera.targetTexture.descriptor,
+						motionVectorRenderTarget = new RenderTargetIdentifier(),
+						motionVectorRenderTargetDesc = new RenderTextureDescriptor(),
+						cullingParameters = cullingParams,
+						occlusionMeshMaterial = null,
+						occlusionMeshScale = 1f,
+						renderTargetScaledWidth = resolution.x,
+						renderTargetScaledHeight = resolution.y,
+						foveatedRenderingInfo = IntPtr.Zero,
+						multipassId = 0,
+						cullingPassId = -1,
+						copyDepth = true,
+						hasMotionVectorPass = false
+					};
+
+					Debug.Log( "TEST" );
+
+					_xr = XRPass.CreateDefault( createInfo );
+					_xr.AddView( new XRView() );
+					_xr.AddView( new XRView() );
+				}
+
+				//Debug.Log( "_xr.enabled: " + _xr.enabled + ", _xr.viewCount: " + _xr.viewCount + ", TextureXR.maxViews: " + TextureXR.slices );
+
+				//if( _xr.viewCount >= 2 ) Debug.Log( "_xr.GetViewport( 0 ): " + _xr.GetViewport( 0 ) + ", _xr.GetViewport( 1 ): " + _xr.GetViewport( 1 ) );
 				// Compute and overwrite.
 				if( _xr.viewCount > 1 && _offAxisCamera && _singlePassSetup )
 				{
@@ -649,6 +671,9 @@ namespace UnityEngine.Rendering.HighDefinition
 					Matrix4x4 viewLeft = Matrix4x4.identity, viewRight = Matrix4x4.identity, projectionLeft = Matrix4x4.identity, projectionRight = Matrix4x4.identity;
 					OffAxisUtils.ComputeOffAxisCameraMatrices( positionLeft, windowPosition, windowRotation, windowSize, camera.nearClipPlane, camera.farClipPlane, ref viewLeft, ref projectionLeft );
 					OffAxisUtils.ComputeOffAxisCameraMatrices( positionRight, windowPosition, windowRotation, windowSize, camera.nearClipPlane, camera.farClipPlane, ref viewRight, ref projectionRight );
+					//var resolution = _singlePassSetup.eyeResolution;
+					//Rect viewport = new Rect( 0, 0, resolution.x, resolution.y );
+					//Debug.Log( viewport + " == " + _xr.GetViewport( 0 ) + ", slices: " + _xr.GetTextureArraySlice( 0 ) + ", " + _xr.GetTextureArraySlice( 1 ) );
 
 					// Presuming we've modified SRP Core.
 					var xrViewLeft = new XRView( projectionLeft, viewLeft, _prevViewLeft, _hasPrevView, _xr.GetViewport( 0 ), null, _xr.GetTextureArraySlice( 0 ) );
@@ -656,43 +681,15 @@ namespace UnityEngine.Rendering.HighDefinition
 					_xr.AssignView( 0, xrViewLeft );
 					_xr.AssignView( 1, xrViewRight );
 
-					// Construct and overwrite the XR views using reflection.
-					//UpdateConstructorArgs( ref _constructorArgs, projectionLeft, viewLeft, _prevViewLeft, _hasPrevView, _xr.GetViewport( 0 ), null, _xr.GetTextureArraySlice( 0 ) );
-					//var xrViewLeft = _xrViewConstructorInfo.Invoke( _constructorArgs );
-					//UpdateConstructorArgs( ref _constructorArgs, projectionRight, viewRight, _prevViewRight, _hasPrevView, _xr.GetViewport( 1 ), null, _xr.GetTextureArraySlice( 1 ) );
-					//var xrViewRight = _xrViewConstructorInfo.Invoke( _constructorArgs );
-					//UpdateAssignViewArgs( ref _assignViewArgs, 0, xrViewLeft );
-					//_assignViewMethodInfo.Invoke( _xr, _assignViewArgs );
-					//UpdateAssignViewArgs( ref _assignViewArgs, 1, xrViewRight );
-					//_assignViewMethodInfo.Invoke( _xr, _assignViewArgs );
-
 					// Prepare next frame.
 					_prevViewLeft = viewLeft;
 					_prevViewRight = viewRight;
 					_hasPrevView = true;
-
-					//void UpdateConstructorArgs( ref object[] args, Matrix4x4 projection, Matrix4x4 view, Matrix4x4 prevView, bool isPreViewValid, Rect viewport, Mesh occlusionMesh, int textureArraySlice )
-					//{
-					//	args[0] = projection;
-					//	args[1] = view;
-					//	args[2] = prevView;
-					//	args[3] = isPreViewValid;
-					//	args[4] = viewport;
-					//	args[5] = occlusionMesh;
-					//	args[6] = textureArraySlice;
-					//}
-//
-					//void UpdateAssignViewArgs( ref object[] args, int viewIndex, object xrView )
-					//{
-					//	args[0] = viewIndex;
-					//	args[1] = xrView;
-					//}
 				}
 			}
 		}
 
 		// EDIT END ...
-
 
         internal float globalMipBias { set; get; } = 0.0f;
 

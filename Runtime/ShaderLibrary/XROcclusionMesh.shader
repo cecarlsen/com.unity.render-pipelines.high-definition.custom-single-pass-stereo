@@ -27,7 +27,6 @@ Shader "Hidden/HDRP/XROcclusionMesh"
         {
             Varyings output;
             output.vertex = mul(GetRawUnityObjectToWorld(), float4(input.vertex.xy * float2(2.0f, -2.0f) + float2(-1.0f, 1.0f), UNITY_NEAR_CLIP_VALUE, 1.0f));
-			//output.vertex = 0;
 
         #if XR_OCCLUSION_MESH_COMBINED
             output.rtArrayIndex = input.vertex.z;

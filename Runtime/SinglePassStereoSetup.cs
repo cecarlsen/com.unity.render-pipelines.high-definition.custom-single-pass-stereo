@@ -12,6 +12,7 @@ public class SinglePassStereoSetup : MonoBehaviour
 	[SerializeField] float _eyeSeperation = 0.064f;
 
 	public float eyeSeperation => _eyeSeperation;
+	public Vector2Int eyeResolution => _eyeResolution;
 
 
 	void Start()
@@ -25,6 +26,6 @@ public class SinglePassStereoSetup : MonoBehaviour
 
 	void OnValidate()
 	{
-		MockHMD.SetEyeResolution( _eyeResolution.x, _eyeResolution.y );
+		if( Application.isPlaying ) MockHMD.SetEyeResolution( _eyeResolution.x, _eyeResolution.y );
 	}
 }
