@@ -21,11 +21,11 @@ Based on HDRP 17.1.0 (April 2025).
 - Install *XR Plugin Management* using the package manager or in the Project Settings->XR window.
 - Go to Project Settings->XR and install Mock HMD Loader. Then enable Initialize XR on Startup and choose SinglePass Instanced under MockHMD.
 - Go to Project Settings->Quality->HDRP->XR and disable Occlusion Mesh.
+- Close the Unity project and drop this repo at some path. Then edit your package manifest.json file to point to that path. For example: *"com.unity.render-pipelines.high-definition": "file:../../PackageRepos/com.unity.render-pipelines.high-definition.custom-single-pass-stereo",*
+- Cross your fingers and re-open your project.
 - In your scene:
 	- Add a OffAxisCamera component to your main camera and give it a reference to a "Window Transform".
 	- Add SinglePassStereoSetup to an object and set a per eye resolution.
-- Close the Unity project and drop this repo at some path. Then edit your package manifest.json file to point to that path. For example: *"com.unity.render-pipelines.high-definition": "file:../../PackageRepos/com.unity.render-pipelines.high-definition.custom-single-pass-stereo",*
-- Cross your fingers and re-open your project.
 
 
 ## What was modded in HDRP?
