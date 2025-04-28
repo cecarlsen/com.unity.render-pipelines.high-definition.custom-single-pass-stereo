@@ -625,6 +625,12 @@ namespace UnityEngine.Rendering.HighDefinition
 				// TEST: TRY TO ALSO ENABLE XR WHEN CAMERA HAS A TARGET TEXTURE
 				if( camera && camera.targetTexture && Application.isPlaying )
 				{
+					//Debug.Log( "Has target texture: " + camera.targetTexture.name );
+					/*
+					// "Due to some technical limitations that Unity will resolve in later versions of HDRP, you need the following code in your script if your app doesn't boot directly in VR mode:"
+					// https://docs.unity3d.com/Packages/com.unity.render-pipelines.high-definition@17.0/manual/configure-hdrp-for-virtual-reality.html#enable-vr-single-pass-after-startup
+					TextureXR.maxViews = 2; 
+
 					ScriptableCullingParameters cullingParams;
 					camera.TryGetCullingParameters( out cullingParams );
 					
@@ -647,11 +653,12 @@ namespace UnityEngine.Rendering.HighDefinition
 						hasMotionVectorPass = false
 					};
 
-					Debug.Log( "TEST" );
 
 					_xr = XRPass.CreateDefault( createInfo );
 					_xr.AddView( new XRView() );
 					_xr.AddView( new XRView() );
+					*/
+					
 				}
 
 				//Debug.Log( "_xr.enabled: " + _xr.enabled + ", _xr.viewCount: " + _xr.viewCount + ", TextureXR.maxViews: " + TextureXR.slices );
