@@ -49,6 +49,11 @@ Based on Unity 6000.1.1f1, HDRP 17.1.0 (May 2025).
 - This readme was added.
 
 
+## Known Issues
+
+- CURRENTLY NOT WORKING IN BUILDS =(
+
+
 ## Notes
 
 [Here](https://discussions.unity.com/t/custom-single-pass-stereo-matrices-in-hdrp-how) is the Unity Discussions thread that lead to the soltuion.
