@@ -88,11 +88,11 @@ public class StereoHackEnabler : MonoBehaviour
 		// it look washed out. Instead we try to use the same color space conversion as the original XRMirrorView.
 		// However, the _MaxNits and _SourceMaxNits values are just made up to visually match the original XRMirrorView output and
 		// so something is still off.
-		int sourceHdrEncoding;
-		HDROutputUtils.GetColorEncodingForGamut( ColorGamut.sRGB, out sourceHdrEncoding);
-		_blitMaterial.SetInteger( "_SourceHDREncoding", sourceHdrEncoding );
-		_blitMaterial.SetFloat( "_MaxNits", 1f ); // Same as in XRPass.
-		_blitMaterial.SetFloat( "_SourceMaxNits", 1.8f ); // This mysterious values was found by visually comparing to the original Mirror View output.
+		//int sourceHdrEncoding;
+		//HDROutputUtils.GetColorEncodingForGamut( ColorGamut.sRGB, out sourceHdrEncoding);
+		//_blitMaterial.SetInteger( "_SourceHDREncoding", sourceHdrEncoding );
+		//_blitMaterial.SetFloat( "_MaxNits", 1f ); // Same as in XRPass.
+		//_blitMaterial.SetFloat( "_SourceMaxNits", 1.8f ); // This mysterious values was found by visually comparing to the original Mirror View output.
 
 		// ALTERNATIVE: Use CustomPass to do the xr->sbs blit.
 		//var customPass = gameObject.AddComponent<CustomPassVolume>();

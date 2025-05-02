@@ -22,7 +22,7 @@ Based on Unity 6000.1.1f1, HDRP 17.1.0 (May 2025).
 			- */Runtime/XR/XRPass.css*
 				- Make all fields of XRPassCreateInfo public.
 				- Since we don't have a XRDisplaySubsystem:
-					- Make the isHDRDisplayOutputActive property always return true. Otherwise HDRP will render UI into our target texture.
+					- Make the isHDRDisplayOutputActive property always return false. Otherwise colors will be wrong.
 					- Make the hdrDisplayOutputColorGamut property always return ColorGamut.sRGB.
 					- Make the hdrDisplayOutputInformation always return new HDROutputUtils.HDRDisplayInformation( -1, 1000, 0, 160f ). 
 				- Make the AssignView() method public.
@@ -48,10 +48,6 @@ Based on Unity 6000.1.1f1, HDRP 17.1.0 (May 2025).
 - Runtime/StereoHack/StereoHackEnabler.cs and StereoHackSbsBlit.shader was added.
 - This readme was added.
 
-
-## Known issues
-
-- Colors are not converted correctly. More work has to be done to mirror how XRMirrorView renders the stereo texture array to screen.
 
 ## Notes
 

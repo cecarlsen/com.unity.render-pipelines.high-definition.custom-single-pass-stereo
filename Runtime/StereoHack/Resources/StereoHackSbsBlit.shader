@@ -58,11 +58,11 @@ Shader "Hidden/StereoHackSbsBlit"
 
 			// FROM XRMIRRORVIEW.HLSL:
 			// Convert the encoded output image into linear
-			color = InverseOETF( color, _SourceMaxNits, _SourceHDREncoding );
+			//color = InverseOETF( color, _SourceMaxNits, _SourceHDREncoding );
 			// Now we need to convert the color space from source to destination;
 			//color = mul((float3x3)_ColorTransform, color);
 			// Convert the linear image into the correct encoded output for the display
-			color = OETF( color, _MaxNits );
+			//color = OETF( color, _MaxNits );
 
 			return float4( color, 1 );
 		}
