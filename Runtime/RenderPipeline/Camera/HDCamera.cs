@@ -603,7 +603,9 @@ namespace UnityEngine.Rendering.HighDefinition
 			get => _xr;
 			set {
 				_xr = value;
-				if( Application.isPlaying && camera.cameraType == CameraType.Game && StereoHackEnabler.instance ) _xr = StereoHackEnabler.instance.CreateXRPass();
+				if( Application.isPlaying && camera.cameraType == CameraType.Game && StereoHackEnabler.instance ){
+					_xr = StereoHackEnabler.instance.CreateXRPass();
+				}
 			}
 		}
 
