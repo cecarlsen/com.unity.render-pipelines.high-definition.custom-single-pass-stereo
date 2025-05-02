@@ -63,16 +63,22 @@ public class StereoHackEnabler : MonoBehaviour
 
 	void OnEnable()
 	{
+		Debug.Log( "OnEnable" );
+
 		if( !_targetSbsStereoTexture ) throw new Exception( "Target SBS stereo texture not set." );
 		if( _targetSbsStereoTexture.graphicsFormat != _hdrpColorFormat ) throw new Exception( $"Target SBS stereo texture must be {_hdrpColorFormat}." );
 
-		_instance = this;
+		Debug.Log( "OnEnable2" );
 
 		_camera = Camera.main;
 		if( !_camera ) throw new Exception( "Main camera not found." );
 
+		Debug.Log( "OnEnable3" );
+
 		_offAxisCamera = _camera.GetComponent<OffAxisCamera>();
 		if( !_offAxisCamera ) throw new Exception( "OffAxisCamera component not found on main camera." );
+
+		Debug.Log( "OnEnable4" );
 
 		_cmd = new CommandBuffer();
 		_cameraRenderTargetId = new RenderTargetIdentifier( BuiltinRenderTextureType.CameraTarget );
@@ -101,7 +107,13 @@ public class StereoHackEnabler : MonoBehaviour
 		//stereoPass.targetColorBuffer = CustomPass.TargetBuffer.None;
 		//stereoPass.targetDepthBuffer = CustomPass.TargetBuffer.None;
 
+		Debug.Log( "_targetSbsStereoTexture: " + ( _targetSbsStereoTexture == null ? "null" : _targetSbsStereoTexture.name ) );
+		Debug.Log( "_cameraStereoTextureArray: " + _cameraStereoTextureArray == null ? "null" : _cameraStereoTextureArray.name );
+		Debug.Log( "_cameraStereoMotionVectorTextureArray: " + _cameraStereoMotionVectorTextureArray == null ? "null" : _cameraStereoMotionVectorTextureArray.name );
+
 		RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
+
+		_instance = this;
 	}
 
 
@@ -117,11 +129,20 @@ public class StereoHackEnabler : MonoBehaviour
 
 	public XRPass CreateXRPass()
 	{
+		//Debug.Log( "_targetSbsStereoTexture: " + ( _targetSbsStereoTexture == null ? "null" : _targetSbsStereoTexture.name ) );
+		//Debug.Log( "_cameraStereoTextureArray: " + _cameraStereoTextureArray == null ? "null" : _cameraStereoTextureArray.name );
+		//Debug.Log( "_cameraStereoMotionVectorTextureArray: " + _cameraStereoMotionVectorTextureArray == null ? "null" : _cameraStereoMotionVectorTextureArray.name );
+//
+		//if( !_cameraStereoTextureArray || !_cameraStereoTextureArray.IsCreated() ) _cameraStereoTextureArray = CreateTexArray( _perEyeResolution, _hdrpColorFormat, "StereoHackCameraTextureArray" );
+		//if( !_cameraStereoMotionVectorTextureArray || !_cameraStereoMotionVectorTextureArray.IsCreated() ) _cameraStereoMotionVectorTextureArray = CreateTexArray( _perEyeResolution, _hdrpMotionVectorFormat, "StereoHackCameraMotionVectorTextureArray" );
+		//if( !_cameraStereoTextureArray || !_cameraStereoMotionVectorTextureArray ) return null;
+
 		TextureXR.maxViews = 2;
 		TextureXR.GetBlackTextureArray();
 
 		ScriptableCullingParameters cullingParams;
 		_camera.TryGetCullingParameters( out cullingParams );
+
 		var createInfo = new XRPassCreateInfo()
 		{
 			renderTarget = new RenderTargetIdentifier( _cameraStereoTextureArray ),
