@@ -13,8 +13,7 @@
         "Unity.Timeline",
         "Unity.VisualEffectGraph.Runtime",
         "Unity.RenderPipelines.GPUDriven.Runtime",
-        "OffAxisCameraRuntime",
-        "Unity.XR.MockHMD"
+        "OffAxisCameraRuntime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -83,6 +83,10 @@ namespace UnityEngine.Rendering.HighDefinition
 
                 UpdateParentExposure(m_RenderGraph, hdCamera);
 
+				// CEC backBuffer is the xr target, so the single pass texture array! hdCamera.xr.renderTarget == target.id.
+				// What is color buffer then?
+				//Debug.Log( target.id + " AND " + renderRequest.hdCamera.xr.renderTarget );
+
                 TextureHandle backBuffer = m_RenderGraph.ImportBackbuffer(target.id);
                 TextureHandle colorBuffer = CreateColorBuffer(m_RenderGraph, hdCamera, msaa, true);
                 m_NonMSAAColorBuffer = CreateColorBuffer(m_RenderGraph, hdCamera, false);
@@ -94,6 +98,8 @@ namespace UnityEngine.Rendering.HighDefinition
 #else
                 TextureHandle vtFeedbackBuffer = TextureHandle.nullHandle;
 #endif
+				//m_RenderGraph.ImportTexture( )
+				//Debug.Log( target.id );
 
                 // Evaluate the ray tracing acceleration structure debug views
                 EvaluateRTASDebugView(m_RenderGraph, hdCamera);
@@ -253,7 +259,9 @@ namespace UnityEngine.Rendering.HighDefinition
                     colorBuffer = RenderTransparency(m_RenderGraph, hdCamera, colorBuffer, prepassOutput.resolvedNormalBuffer, vtFeedbackBuffer, currentColorPyramid, volumetricLighting, rayCountTexture, opticalFogTransmittance,
                         m_SkyManager.GetSkyReflection(hdCamera), gpuLightListOutput, transparentPrepass, ref prepassOutput, shadowResult, cullingResults, customPassCullingResults, aovRequest, aovCustomPassBuffers);
 
-                    uiBuffer = RenderTransparentUI(m_RenderGraph, hdCamera);
+					// CEC EDIT
+					uiBuffer = m_RenderGraph.defaultResources.blackTextureXR;
+                    //uiBuffer = RenderTransparentUI(m_RenderGraph, hdCamera);
 
                     if (NeedMotionVectorForTransparent(hdCamera.frameSettings))
                     {
@@ -434,8 +442,31 @@ namespace UnityEngine.Rendering.HighDefinition
                 // Stop XR single pass before rendering screenspace UI
                 StopXRSinglePass(m_RenderGraph, hdCamera);
 
-                if (renderRequest.isLast)
-                    RenderScreenSpaceOverlayUI(m_RenderGraph, hdCamera, backBuffer);
+				//Debug.Log( "renderRequest.isLast: " + renderRequest.isLast);
+               if (renderRequest.isLast){
+					// CEC EDIT: No UI please when hack is present. We render this in StereoHackEnabler on OnEndCameraRendering.
+                	if( !StereoHackEnabler.instance ) RenderScreenSpaceOverlayUI(m_RenderGraph, hdCamera, backBuffer);
+				}
+				else
+				{
+					// We need to blit the backbuffer to the target in case we are not the last request
+					using (var builder = m_RenderGraph.AddRenderPass<FinalBlitPassData>("Final Blit", out var passData))
+					{
+						passData.flip = hdCamera.flipYMode == HDAdditionalCameraData.FlipYMode.ForceFlipY || hdCamera.isMainGameView;
+						passData.blitMaterial = HDUtils.GetBlitMaterial(TextureXR.useTexArray ? TextureDimension.Tex2DArray : TextureDimension.Tex2D, singleSlice: false);
+						passData.source = builder.ReadTexture(backBuffer);
+						passData.destination = builder.WriteTexture(backBuffer);
+						passData.applyAfterPP = false;
+						passData.cubemapFace = CubemapFace.Unknown;
+
+						builder.SetRenderFunc(
+							(FinalBlitPassData data, RenderGraphContext context) =>
+							{
+								context.cmd.Blit(data.source, data.destination, data.blitMaterial, 0);
+							});
+					}
+					
+			   }
             }
         }
 
@@ -1010,10 +1041,12 @@ namespace UnityEngine.Rendering.HighDefinition
         TextureHandle RenderTransparentUI(RenderGraph renderGraph, HDCamera hdCamera)
         {
             var output = renderGraph.defaultResources.blackTextureXR;
+			//if( hdCamera.camera.cameraType == CameraType.Game ) Debug.Log( hdCamera.camera.name + ". HDROutputActiveForCameraType(hdCamera): " + HDROutputActiveForCameraType(hdCamera) + ", SupportedRenderingFeatures.active.rendersUIOverlay: " + SupportedRenderingFeatures.active.rendersUIOverlay + ", NeedHDRDebugMode(m_CurrentDebugDisplaySettings): " + NeedHDRDebugMode(m_CurrentDebugDisplaySettings) );
             if (HDROutputActiveForCameraType(hdCamera) && SupportedRenderingFeatures.active.rendersUIOverlay && !NeedHDRDebugMode(m_CurrentDebugDisplaySettings))
             {
                 using (var builder = renderGraph.AddRenderPass<RenderOffscreenUIData>("UI Rendering", out var passData, ProfilingSampler.Get(HDProfileId.OffscreenUIRendering)))
                 {
+					//Debug.Log( "OffscreenUIRendering" );
                     // We cannot use rendererlist here because of the path tracing denoiser which will make it invalid due to multiple rendering per frame
                     output = builder.UseColorBuffer(CreateOffscreenUIBuffer(renderGraph, hdCamera.msaaSamples, hdCamera.finalViewport), 0);
                     builder.UseDepthBuffer(CreateOffscreenUIDepthBuffer(renderGraph, hdCamera.msaaSamples, hdCamera.finalViewport), DepthAccess.Write);
@@ -2388,6 +2421,9 @@ namespace UnityEngine.Rendering.HighDefinition
 
         void RenderScreenSpaceOverlayUI(RenderGraph renderGraph, HDCamera hdCamera, TextureHandle colorBuffer)
         {
+
+			//CEC CHECK
+			//if( hdCamera.camera.cameraType == CameraType.Game ) Debug.Log( "!HDROutputActiveForCameraType: " +!HDROutputActiveForCameraType(hdCamera) + ", rendersUIOverlay: " + SupportedRenderingFeatures.active.rendersUIOverlay + ", hdCamera.isMainGameView: " + hdCamera.isMainGameView );
             if (!HDROutputActiveForCameraType(hdCamera) && SupportedRenderingFeatures.active.rendersUIOverlay && hdCamera.isMainGameView)
             {
                 using (var builder = renderGraph.AddRenderPass<RenderScreenSpaceOverlayData>("Screen Space Overlay UI", out var passData))

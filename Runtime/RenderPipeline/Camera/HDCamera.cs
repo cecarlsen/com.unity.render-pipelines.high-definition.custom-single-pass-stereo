@@ -593,110 +593,23 @@ namespace UnityEngine.Rendering.HighDefinition
         // The issue is that this is called during culling which happens before Volume updates so we can't query it via volumes in there.
         internal SkyAmbientMode skyAmbientMode { get; private set; }
 
+
+		// CEC EDIT BEGIN
+
         // XR multipass and instanced views are supported (see XRSystem)
-       //internal XRPass xr { get; private set; }
-
-	   		// EDIT BEGIN ...
-
-		//internal XRPass xr { get; private set; } // Original property.
+        //internal XRPass xr { get; private set; }
 		XRPass _xr;
-		OffAxisCamera _offAxisCamera;
-		SinglePassStereoSetup _singlePassSetup;
-		Matrix4x4 _prevViewLeft = Matrix4x4.identity;
-		Matrix4x4 _prevViewRight = Matrix4x4.identity;
-		bool _hasPrevView = false;
-
-
 		public XRPass xr {
-			get { return _xr; }
+			get => _xr;
 			set {
-				// HDCamera.xr is set continuesly from HDCamera.Update() where the XRPass is passed in from HDRenderPipeline.TryCalculateFrameParameters(), which is called from HDRenderPipeline.PrepareAndCullCamera().
-				// It is set before the "Before Rendering" custom pass. But if I try to overwrite it from there, it has no effect, so mysterious things happen betewen the two calls.
-				// For example, HDRenderPipeline.RenderGraphUtils.StartXRSinglePass() is using HDCamera.xr directly.
-				// Modding the HDCamera and overwriting xr everytime it is set seems to be the only way to get it to work, without writing a custom XR plugin.
 				_xr = value;
-
-				// In my case, I'll be using OffAxisCamera to compute the views.
-				if( !_offAxisCamera ) _offAxisCamera = camera.GetComponent<OffAxisCamera>();
-				
-				// An awkward way to store settings, but it works.
-				if( !_singlePassSetup ) _singlePassSetup = Object.FindFirstObjectByType<SinglePassStereoSetup>( FindObjectsInactive.Include );
-
-				// TEST: TRY TO ALSO ENABLE XR WHEN CAMERA HAS A TARGET TEXTURE
-				if( camera && camera.targetTexture && Application.isPlaying )
-				{
-					//Debug.Log( "Has target texture: " + camera.targetTexture.name );
-					/*
-					// "Due to some technical limitations that Unity will resolve in later versions of HDRP, you need the following code in your script if your app doesn't boot directly in VR mode:"
-					// https://docs.unity3d.com/Packages/com.unity.render-pipelines.high-definition@17.0/manual/configure-hdrp-for-virtual-reality.html#enable-vr-single-pass-after-startup
-					TextureXR.maxViews = 2; 
-
-					ScriptableCullingParameters cullingParams;
-					camera.TryGetCullingParameters( out cullingParams );
-					
-					var resolution = _singlePassSetup.eyeResolution;
-
-					var createInfo = new XRPassCreateInfo(){
-						renderTarget = new RenderTargetIdentifier( camera.targetTexture ),
-						renderTargetDesc = camera.targetTexture.descriptor,
-						motionVectorRenderTarget = new RenderTargetIdentifier(),
-						motionVectorRenderTargetDesc = new RenderTextureDescriptor(),
-						cullingParameters = cullingParams,
-						occlusionMeshMaterial = null,
-						occlusionMeshScale = 1f,
-						renderTargetScaledWidth = resolution.x,
-						renderTargetScaledHeight = resolution.y,
-						foveatedRenderingInfo = IntPtr.Zero,
-						multipassId = 0,
-						cullingPassId = -1,
-						copyDepth = true,
-						hasMotionVectorPass = false
-					};
-
-
-					_xr = XRPass.CreateDefault( createInfo );
-					_xr.AddView( new XRView() );
-					_xr.AddView( new XRView() );
-					*/
-					
-				}
-
-				//Debug.Log( "_xr.enabled: " + _xr.enabled + ", _xr.viewCount: " + _xr.viewCount + ", TextureXR.maxViews: " + TextureXR.slices );
-
-				//if( _xr.viewCount >= 2 ) Debug.Log( "_xr.GetViewport( 0 ): " + _xr.GetViewport( 0 ) + ", _xr.GetViewport( 1 ): " + _xr.GetViewport( 1 ) );
-				// Compute and overwrite.
-				if( _xr.viewCount > 1 && _offAxisCamera && _singlePassSetup )
-				{
-					// Compute off-axis views.
-					var windowTransform = _offAxisCamera.windowTransform;
-					var windowSize = new Vector2( windowTransform.lossyScale.x, windowTransform.lossyScale.y );
-					var windowPosition = windowTransform.position;
-					var windowRotation = windowTransform.rotation;
-					float eyeSeperation = _singlePassSetup.eyeSeperation;
-					var positionLeft = camera.transform.position - camera.transform.right * eyeSeperation * 0.5f;
-					var positionRight = camera.transform.position + camera.transform.right * eyeSeperation * 0.5f;
-					Matrix4x4 viewLeft = Matrix4x4.identity, viewRight = Matrix4x4.identity, projectionLeft = Matrix4x4.identity, projectionRight = Matrix4x4.identity;
-					OffAxisUtils.ComputeOffAxisCameraMatrices( positionLeft, windowPosition, windowRotation, windowSize, camera.nearClipPlane, camera.farClipPlane, ref viewLeft, ref projectionLeft );
-					OffAxisUtils.ComputeOffAxisCameraMatrices( positionRight, windowPosition, windowRotation, windowSize, camera.nearClipPlane, camera.farClipPlane, ref viewRight, ref projectionRight );
-					//var resolution = _singlePassSetup.eyeResolution;
-					//Rect viewport = new Rect( 0, 0, resolution.x, resolution.y );
-					//Debug.Log( viewport + " == " + _xr.GetViewport( 0 ) + ", slices: " + _xr.GetTextureArraySlice( 0 ) + ", " + _xr.GetTextureArraySlice( 1 ) );
-
-					// Presuming we've modified SRP Core.
-					var xrViewLeft = new XRView( projectionLeft, viewLeft, _prevViewLeft, _hasPrevView, _xr.GetViewport( 0 ), null, _xr.GetTextureArraySlice( 0 ) );
-					var xrViewRight = new XRView( projectionRight, viewRight, _prevViewRight, _hasPrevView, _xr.GetViewport( 1 ), null, _xr.GetTextureArraySlice( 1 ) );
-					_xr.AssignView( 0, xrViewLeft );
-					_xr.AssignView( 1, xrViewRight );
-
-					// Prepare next frame.
-					_prevViewLeft = viewLeft;
-					_prevViewRight = viewRight;
-					_hasPrevView = true;
-				}
+				if( Application.isPlaying && camera.cameraType == CameraType.Game && StereoHackEnabler.instance ) _xr = StereoHackEnabler.instance.CreateXRPass();
 			}
 		}
 
-		// EDIT END ...
+		// CEC EDIT END
+
+
 
         internal float globalMipBias { set; get; } = 0.0f;
 

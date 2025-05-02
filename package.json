@@ -11,9 +11,7 @@
     "com.unity.render-pipelines.core": "17.1.0",
     "com.unity.shadergraph": "17.1.0",
     "com.unity.visualeffectgraph": "17.1.0",
-    "com.unity.render-pipelines.high-definition-config": "17.1.0",
-    "com.sixthsensor.offaxiscamera": "1.2.5",
-    "com.unity.xr.mock-hmd": "1.4.0-preview.2"
+    "com.unity.render-pipelines.high-definition-config": "17.1.0"
   },
   "keywords": [
     "graphics",
@@ -102,5 +100,5 @@
       ]
     }
   ],
-  "_fingerprint": "b3010f55e5f36c5ca678b8515cf682b79744c46a"
+  "_fingerprint": "78ce765e749ffd056d58ee825de7dc965d7996e0"
 }

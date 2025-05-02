@@ -2199,6 +2199,7 @@ namespace UnityEngine.Rendering.HighDefinition
             Terrain.GetActiveTerrains(m_ActiveTerrains);
 
             XRSystem.singlePassAllowed = m_Asset.currentPlatformRenderPipelineSettings.xrSettings.singlePass;
+
             var xrLayout = XRSystem.NewLayout();
 
             // This syntax is awful and hostile to debugging, please don't use it...
@@ -2356,6 +2357,9 @@ namespace UnityEngine.Rendering.HighDefinition
                             var renderRequest = renderRequests[renderRequestIndex];
                             renderRequest.isLast = isLast;
 
+							//Debug.Log( renderRequest.target.id + " AND " + renderRequest.hdCamera.xr.renderTarget );
+							
+
                             var cmd = CommandBufferPool.Get("");
 
                             GPUResidentDrawer.PostCullBeginCameraRendering(new RenderRequestBatcherContext { commandBuffer = cmd });
@@ -2380,6 +2384,8 @@ namespace UnityEngine.Rendering.HighDefinition
 
                             using (new ProfilingScope(cmd, renderRequest.hdCamera.profilingSampler))
                             {
+								//if( renderRequest.hdCamera.camera.cameraType == CameraType.Game ) Debug.Log( "Same pre RenderMirrorView? " + ( renderRequest.target.id == renderRequest.hdCamera.xr.renderTarget ) );
+
                                 cmd.SetInvertCulling(renderRequest.cameraSettings.invertFaceCulling);
                                 ExecuteRenderRequest(renderRequest, renderContext, cmd, AOVRequestData.defaultAOVRequestDataNonAlloc);
                                 cmd.SetInvertCulling(false);
@@ -2387,14 +2393,15 @@ namespace UnityEngine.Rendering.HighDefinition
 
                             EndRenderRequest(renderRequest, cmd);
 
+							// CEC EDIT: No default mirrow view thank you.
                             // Render XR mirror view once all render requests have been completed
-                            if (isLast && renderRequest.hdCamera.camera.cameraType == CameraType.Game && renderRequest.hdCamera.camera.targetTexture == null)
-                            {
-                                if (HDUtils.TryGetAdditionalCameraDataOrDefault(renderRequest.hdCamera.camera).xrRendering)
-                                {
-                                    XRSystem.RenderMirrorView(cmd, renderRequest.hdCamera.camera);
-                                }
-                            }
+                            //if (isLast && renderRequest.hdCamera.camera.cameraType == CameraType.Game && renderRequest.hdCamera.camera.targetTexture == null)
+                            //{
+                            //    if (HDUtils.TryGetAdditionalCameraDataOrDefault(renderRequest.hdCamera.camera).xrRendering)
+                            //    {
+                            //        XRSystem.RenderMirrorView(cmd, renderRequest.hdCamera.camera);
+                            //    }
+                            //}
 
                             // Let's make sure to keep track of lights that will generate screen space shadows.
                             CollectScreenSpaceShadowData();
@@ -2408,6 +2415,7 @@ namespace UnityEngine.Rendering.HighDefinition
                                 //  EndCameraRendering callback should be executed outside of any profiling scope in case user code submits the renderContext
                                 EndCameraRendering(renderContext, renderRequest.hdCamera.camera);
                             }
+
                         }
 
                         ScriptableRenderContext.PopDisableApiRenderers();
