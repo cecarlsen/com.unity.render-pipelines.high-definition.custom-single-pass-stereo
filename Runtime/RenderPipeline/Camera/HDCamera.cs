@@ -593,25 +593,8 @@ namespace UnityEngine.Rendering.HighDefinition
         // The issue is that this is called during culling which happens before Volume updates so we can't query it via volumes in there.
         internal SkyAmbientMode skyAmbientMode { get; private set; }
 
-
-		// CEC EDIT BEGIN
-
         // XR multipass and instanced views are supported (see XRSystem)
-        //internal XRPass xr { get; private set; }
-		XRPass _xr;
-		public XRPass xr {
-			get => _xr;
-			set {
-				_xr = value;
-				if( Application.isPlaying && camera.cameraType == CameraType.Game && StereoHackEnabler.instance ){
-					_xr = StereoHackEnabler.instance.CreateXRPass();
-				}
-			}
-		}
-
-		// CEC EDIT END
-
-
+        internal XRPass xr { get; private set; }
 
         internal float globalMipBias { set; get; } = 0.0f;
 
@@ -1166,6 +1149,8 @@ namespace UnityEngine.Rendering.HighDefinition
         // Otherwise, previous frame view constants will be wrong.
         internal void Update(FrameSettings currentFrameSettings, HDRenderPipeline hdrp, XRPass xrPass, bool allocateHistoryBuffers = true)
         {
+			//Debug.Log( "UPDATE HdCamera. xrPass.viewCount " + xrPass.viewCount );
+
             // Inherit animation settings from the parent camera.
             Camera aniCam = (parentCamera != null) ? parentCamera : camera;
 

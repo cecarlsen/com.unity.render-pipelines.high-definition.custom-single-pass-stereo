@@ -39,6 +39,17 @@ namespace UnityEngine.Rendering.HighDefinition
                 var customPassCullingResults = renderRequest.cullingResults.customPassCullingResults ?? cullingResults;
                 bool msaa = hdCamera.msaaEnabled;
                 var target = renderRequest.target;
+				
+				//if( camera.cameraType == CameraType.Game ){
+				//	Debug.Log(
+				//		"RecordRenderGraph. " + camera.name + 
+				//		"\nxr.viewCount: " + hdCamera.xr.viewCount + 
+				//		"\nrenderRequest.xrPass.viewCount:" + renderRequest.xrPass.viewCount +
+				//		"\nhdCamera.m_XRViewConstants.Length: " + hdCamera.m_XRViewConstants.Length + 
+				//		//"\nXRSystem.displayActive: " + XRSystem.displayActive +
+				//		"\nXRSystem.GetActiveDisplay(): " + XRSystem.GetActiveDisplay()
+				//	);
+				//}
 
                 //Set resolution group for the entire frame
                 SetCurrentResolutionGroup(m_RenderGraph, hdCamera, ResolutionGroup.BeforeDynamicResUpscale);
@@ -98,8 +109,6 @@ namespace UnityEngine.Rendering.HighDefinition
 #else
                 TextureHandle vtFeedbackBuffer = TextureHandle.nullHandle;
 #endif
-				//m_RenderGraph.ImportTexture( )
-				//Debug.Log( target.id );
 
                 // Evaluate the ray tracing acceleration structure debug views
                 EvaluateRTASDebugView(m_RenderGraph, hdCamera);
@@ -118,6 +127,8 @@ namespace UnityEngine.Rendering.HighDefinition
                 BuildGPULightListOutput gpuLightListOutput = new BuildGPULightListOutput();
                 TextureHandle uiBuffer = m_RenderGraph.defaultResources.blackTextureXR;
                 TextureHandle opticalFogTransmittance = TextureHandle.nullHandle;
+
+
 
                 // Volume components
                 PathTracing pathTracing = hdCamera.volumeStack.GetComponent<PathTracing>();

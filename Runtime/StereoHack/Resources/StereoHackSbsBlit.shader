@@ -56,6 +56,7 @@ Shader "Hidden/StereoHackSbsBlit"
 			varyings.texcoord.x -= eyeIndex;
 			float3 color = SAMPLE_TEXTURE2D_ARRAY( _MainTex, sampler_LinearClamp, varyings.texcoord, eyeIndex ).rgb;
 
+			color.g = saturate( color.g + eyeIndex * 0.1 );
 			// FROM XRMIRRORVIEW.HLSL:
 			// Convert the encoded output image into linear
 			//color = InverseOETF( color, _SourceMaxNits, _SourceHDREncoding );

@@ -1181,6 +1181,7 @@ namespace UnityEngine.Rendering.HighDefinition
             hdCamera.PushBuiltinShaderConstantsXR(cmd);
             hdCamera.UpdateShaderVariablesXRCB(ref m_ShaderVariablesXRCB);
             ConstantBuffer.PushGlobal(cmd, m_ShaderVariablesXRCB, HDShaderIDs._ShaderVariablesXR);
+			//Debug.Log( "UpdateShaderVariablesXRCB. hdCamera.m_XRViewConstants.Length: " + hdCamera.m_XRViewConstants.Length );
         }
 
         void UpdateShaderVariablesRaytracingCB(HDCamera hdCamera, CommandBuffer cmd)
@@ -2117,6 +2118,7 @@ namespace UnityEngine.Rendering.HighDefinition
         /// <param name="cameras">List of cameras to render.</param>
         protected override void Render(ScriptableRenderContext renderContext, List<Camera> cameras)
         {
+
 #if UNITY_EDITOR
             // Build target can change in editor so we need to check if the target is supported
             if (!HDUtils.IsSupportedBuildTarget(UnityEditor.EditorUserBuildSettings.activeBuildTarget))
@@ -2210,8 +2212,18 @@ namespace UnityEngine.Rendering.HighDefinition
             using (ListPool<CubemapFace>.Get(out List<CubemapFace> cameraCubemapFaces))
             {
                 // With XR multi-pass enabled, each camera can be rendered multiple times with different parameters
-                foreach (var c in cameras)
-                    xrLayout.AddCamera(c, HDUtils.TryGetAdditionalCameraDataOrDefault(c).xrRendering);
+                foreach (var c in cameras){
+					// CEC EDIT.
+                    //xrLayout.AddCamera(c, HDUtils.TryGetAdditionalCameraDataOrDefault(c).xrRendering);
+					bool useStereoHack = c.cameraType == CameraType.Game && StereoHackEnabler.instance;
+					if( useStereoHack ){
+						// Use our own XRPass for stereo hack.
+						xrLayout.AddPass( c, StereoHackEnabler.instance.CreateXRPass() );
+					} else {
+						// The AddCamera() method invokes AddPass().
+						xrLayout.AddCamera(c, HDUtils.TryGetAdditionalCameraDataOrDefault(c).xrRendering);
+					}
+				}
 
 #if UNITY_EDITOR
                 // See comment below about the preview camera workaround
@@ -2236,6 +2248,12 @@ namespace UnityEngine.Rendering.HighDefinition
                 {
                     if (camera == null)
                         continue;
+
+					//if( camera.cameraType == CameraType.Game && StereoHackEnabler.instance ){
+					//	xrPass = StereoHackEnabler.instance.CreateXRPass();
+					//}
+
+					//if( camera.cameraType == CameraType.Game ) Debug.Log( camera.name + " xrPass.enabled: " + xrPass.enabled );
 
 #if UNITY_EDITOR
                     // We selecting a camera in the editor, we have a preview that is drawn.
@@ -2267,7 +2285,7 @@ namespace UnityEngine.Rendering.HighDefinition
                     // First step we tell the DRS handler that we will be using the scaler set by the user. Note DLSS can set a system slot in case it wants to provide
                     // the scale.
                     DynamicResolutionHandler.SetActiveDynamicScalerSlot(DynamicResScalerSlot.User);
-                    if (camera.TryGetComponent<HDAdditionalCameraData>(out hdCam))
+                    if (camera.TryGetComponent(out hdCam))
                     {
                         cameraRequestedDynamicRes = hdCam.allowDynamicResolution && camera.cameraType == CameraType.Game;
 
@@ -2646,6 +2664,9 @@ namespace UnityEngine.Rendering.HighDefinition
             var target = renderRequest.target;
 
             m_FullScreenDebugPushed = false;
+
+			//Debug.Log( "ExecuteRenderRequest. renderRequest.xrPass.viewCount: " + renderRequest.xrPass.viewCount );
+
 
             // Updates RTHandle
             hdCamera.BeginRender(cmd);

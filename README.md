@@ -2,11 +2,11 @@
 
 USE AT YOUR OWN RISK.
 
-This is a workaround/hack for setting custom single-pass stereo view-projection (off-axis) matrices in HDRP.
+This is a hack for instanced single pass stereo with custom views in HDRP for supporting stereoscopic displays and video projections that need user dependent perspective rendering.
 
-The approach is to overwrite the XRPass in HDCamera with a custom setup. If HDRP sees that camera.xr has two views it's largely fooled to just render single pass stereo, except it raises a few issues that this hack then fixes. Finally, OnEndCameraRendering the target texture is then blitted to a SBS texture.
+In broad strokes, the approach is to add a custom XRPass to XRLayout during HDRenderPipeline.Render() and use OnEndCameraRendering to blit to a SBS texture.
 
-The officially recommended way to do this is by writing and compiling your own OpenXR provider ([NOT](https://discussions.unity.com/t/using-unity-xr-sdk-to-build-my-own-ar-plug-in/904304/13) a XR Provider plugin as has been previosly stated). Yes, writing a plugin ... just to do the equivalent of the (now obsolete) camera.SetStereoViewMatrices() and camera.SetStereoProjectionMatrices() methods
+The officially recommended solution is to write and compile your own OpenXR provider ([NOT](https://discussions.unity.com/t/using-unity-xr-sdk-to-build-my-own-ar-plug-in/904304/13) a XR Provider plugin as has been previosly stated). Yes, writing a plugin ... just to do the equivalent of the (now obsolete) camera.SetStereoViewMatrices() and camera.SetStereoProjectionMatrices() methods.
 
 Based on Unity 6000.1.1f1, HDRP 17.1.0 (May 2025).
 
@@ -27,31 +27,30 @@ Based on Unity 6000.1.1f1, HDRP 17.1.0 (May 2025).
 					- Make the hdrDisplayOutputInformation always return new HDROutputUtils.HDRDisplayInformation( -1, 1000, 0, 160f ). 
 				- Make the AssignView() method public.
 				- Make the AddView() method public.
-- 2) Install OffAxisCamera
+			- */Runtime/XR/XRLayout.css*
+				- make the AddPass mathod public.
+- 2) **Install OffAxisCamera**
 	- Get it on ([Asset Store](https://assetstore.unity.com/packages/tools/camera/offaxiscamera-98991)). Alternatively moddify this hack and use your own view calculations.
-- Install *XR Plugin Management* using the package manager or in the Project Settings->XR window.
-- Close the Unity project and drop this repo at some path. Then edit your package manifest.json file to point to that path. For example: *"com.unity.render-pipelines.high-definition": "file:../../PackageRepos/com.unity.render-pipelines.high-definition.custom-single-pass-stereo",*
-- Cross your fingers and re-open your project.
-- In your scene:
+- 3) **Install MockHMD**
+	- Install *XR Plugin Management* using the package manager or in the Project Settings->XR window. Don't enable "Initialize XR on Startup".
+	- Install *Mock HMD Loader*. If this is not present in your project, stereo instancing will be stripped from all shaders and the STEREO_INSTANCING_ON keyword will be undefined.
+- 4) **Add custom HDRP**
+	- Close the Unity project and drop this repo at some path. Then edit your package manifest.json file to point to that path. For example: *"com.unity.render-pipelines.high-definition": "file:../../PackageRepos/com.unity.render-pipelines.high-definition.custom-single-pass-stereo",*
+	- Cross your fingers and re-open your project.
+- 5) **Setup your scene**
 	- Add a OffAxisCamera component to your main camera and give it a reference to a "Window Transform".
 	- Add StereoHackEnabler component to an object in the scene.
 	- Assign a RenderTexture asset with B10G11R11_UFloatPack32 format to StereoHackEnabler.
 	- Render the the texture somehow. For example by assigning it to a RawImage in a Canvas.
 
 
-## What was modded in HDRP?
+## What was changed in HDRP?
 
-- Runtime/RenderPipeline/Camera/HDCamera.cs xr property was modified, see line 600.
-- Runtime/RenderPipeline/HDRenderPipeline.cs was modified, see line 2396.
-- Runtime/RenderPipeline/HDRenderPipeline.RenderGraph.cs was modified, see line 263 and 447.
-- Runtime/Unity.RenderPipelines.HighDefinition.Runtime.asmdef was mofidied; OffAxisCamera was referenced.
-- Runtime/StereoHack/StereoHackEnabler.cs and StereoHackSbsBlit.shader was added.
-- This readme was added.
+- Modified *HDRenderPipeline.cs* and *HDRenderPipeline.RenderGraph.cs*. Changes are marked with "CEC EDIT".
+- Added reference to OffAxisCamera in the Unity.RenderPipelines.HighDefinition.Runtime.asmdef.
+- Added some files in Runtime/StereoHack/.
+- Added this readme.
 
-
-## Known Issues
-
-- CURRENTLY NOT WORKING IN BUILDS =(
 
 
 ## Notes
