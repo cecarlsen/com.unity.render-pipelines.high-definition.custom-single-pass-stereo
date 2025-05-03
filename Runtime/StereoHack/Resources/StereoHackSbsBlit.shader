@@ -15,6 +15,8 @@ Shader "Hidden/StereoHackSbsBlit"
 		#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 		#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/HDROutput.hlsl"
 
+		#pragma multi_compile_local __ _IS_EDITOR
+
 		TEXTURE2D_ARRAY( _MainTex );
 		SamplerState sampler_LinearClamp;
 
@@ -42,8 +44,12 @@ Shader "Hidden/StereoHackSbsBlit"
 			output.positionCS = GetFullScreenTriangleVertexPosition( input.vertexID );
 			output.texcoord   = GetFullScreenTriangleTexCoord( input.vertexID );
 
-			// Flip y, convert to pixels, and stretch x2 horizontally.
-			output.texcoord.y = 1.0 - output.texcoord.y;
+			// Flip y. For some reason the y coordinate it not flipped in builds. TODO: find out why.
+			#ifdef _IS_EDITOR
+				output.texcoord.y = 1.0 - output.texcoord.y;
+			#endif
+
+			// Stretch x2 horizontally to fit the two eyes.
 			output.texcoord.x *= 2.0;
 
 			return output;
@@ -55,15 +61,6 @@ Shader "Hidden/StereoHackSbsBlit"
 			int eyeIndex = varyings.texcoord.x < 1.0 ? 0 : 1;
 			varyings.texcoord.x -= eyeIndex;
 			float3 color = SAMPLE_TEXTURE2D_ARRAY( _MainTex, sampler_LinearClamp, varyings.texcoord, eyeIndex ).rgb;
-
-			color.g = saturate( color.g + eyeIndex * 0.1 );
-			// FROM XRMIRRORVIEW.HLSL:
-			// Convert the encoded output image into linear
-			//color = InverseOETF( color, _SourceMaxNits, _SourceHDREncoding );
-			// Now we need to convert the color space from source to destination;
-			//color = mul((float3x3)_ColorTransform, color);
-			// Convert the linear image into the correct encoded output for the display
-			//color = OETF( color, _MaxNits );
 
 			return float4( color, 1 );
 		}

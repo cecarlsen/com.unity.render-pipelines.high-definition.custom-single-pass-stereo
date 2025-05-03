@@ -1,6 +1,6 @@
 # High Definition Render Pipeline (Custom) - Single Pass Stereo Mod
 
-USE AT YOUR OWN RISK.
+**USE AT YOUR OWN RISK**
 
 This is a hack for instanced single pass stereo with custom views in HDRP for supporting stereoscopic displays and video projections that need user dependent perspective rendering.
 
@@ -22,7 +22,7 @@ Based on Unity 6000.1.1f1, HDRP 17.1.0 (May 2025).
 			- */Runtime/XR/XRPass.css*
 				- Make all fields of XRPassCreateInfo public.
 				- Since we don't have a XRDisplaySubsystem:
-					- Make the isHDRDisplayOutputActive property always return false. Otherwise colors will be wrong.
+					- Make the isHDRDisplayOutputActive property always return false.
 					- Make the hdrDisplayOutputColorGamut property always return ColorGamut.sRGB.
 					- Make the hdrDisplayOutputInformation always return new HDROutputUtils.HDRDisplayInformation( -1, 1000, 0, 160f ). 
 				- Make the AssignView() method public.

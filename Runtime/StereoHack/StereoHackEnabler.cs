@@ -16,10 +16,6 @@ public class StereoHackEnabler : MonoBehaviour
 	[SerializeField] Vector2Int _perEyeResolution = new Vector2Int( 1920, 1080 );
 	[SerializeField] RenderTexture _targetSbsStereoTexture;
 
-	// TEST
-	//[SerializeField] float _maxNits = 1f;
-	//[SerializeField] float _sourceMaxNits = 2.2f;
-
 	Camera _camera;
 	OffAxisCamera _offAxisCamera;
 	Matrix4x4 _prevViewLeft, _prevViewRight;
@@ -80,27 +76,10 @@ public class StereoHackEnabler : MonoBehaviour
 		if( !shader ) throw new Exception( "Shader 'Hidden/StereoHackSbsBlit' not found." );
 		_blitMaterial = new Material( shader );
 		_blitMaterial.hideFlags = HideFlags.HideAndDontSave;
+		if( Application.isEditor ) _blitMaterial.EnableKeyword( "_IS_EDITOR" ); // Quick workaround for flipped texture, only in editor.
 
 		_cameraStereoTextureArray = CreateTexArray( _perEyeResolution, _hdrpColorFormat, "StereoHackCameraTextureArray" );
 		_cameraStereoMotionVectorTextureArray = CreateTexArray( _perEyeResolution, _hdrpMotionVectorFormat, "StereoHackCameraMotionVectorTextureArray" );
-		
-		// If you just sample the color texture it comes out too dark, and adjusting gamma (pow(1/2.2)) makes
-		// it look washed out. Instead we try to use the same color space conversion as the original XRMirrorView.
-		// However, the _MaxNits and _SourceMaxNits values are just made up to visually match the original XRMirrorView output and
-		// so something is still off.
-		//int sourceHdrEncoding;
-		//HDROutputUtils.GetColorEncodingForGamut( ColorGamut.sRGB, out sourceHdrEncoding);
-		//_blitMaterial.SetInteger( "_SourceHDREncoding", sourceHdrEncoding );
-		//_blitMaterial.SetFloat( "_MaxNits", 1f ); // Same as in XRPass.
-		//_blitMaterial.SetFloat( "_SourceMaxNits", 1.8f ); // This mysterious values was found by visually comparing to the original Mirror View output.
-
-		// ALTERNATIVE: Use CustomPass to do the xr->sbs blit.
-		//var customPass = gameObject.AddComponent<CustomPassVolume>();
-		//customPass.injectionPoint = CustomPassInjectionPoint.AfterPostProcess;
-		//var stereoPass = customPass.AddPassOfType<StereoHackCustomPass>();
-		//stereoPass.name = "StereoHackCustomPass";
-		//stereoPass.targetColorBuffer = CustomPass.TargetBuffer.None;
-		//stereoPass.targetDepthBuffer = CustomPass.TargetBuffer.None;
 
 		RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
 
@@ -179,10 +158,6 @@ public class StereoHackEnabler : MonoBehaviour
 	void OnEndCameraRendering( ScriptableRenderContext ctx, Camera camera )
 	{
 		if( camera.cameraType != CameraType.Game ) return;
-
-		// TEST
-		//_blitMaterial.SetFloat( "_MaxNits", _maxNits );
-		//_blitMaterial.SetFloat( "_SourceMaxNits", _sourceMaxNits );
 
 		// Render single pass stereo render texture array to SBS stereo texture.
 		_cmd.Blit( _cameraStereoTextureArray, _targetSbsStereoTexture, _blitMaterial, 0 );
