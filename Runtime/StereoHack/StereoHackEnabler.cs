@@ -9,12 +9,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.HighDefinition;
 
 public class StereoHackEnabler : MonoBehaviour
 {
 	[SerializeField] float _eyeSeparation = 0.064f;
 	[SerializeField] Vector2Int _perEyeResolution = new Vector2Int( 1920, 1080 );
 	[SerializeField] RenderTexture _targetSbsStereoTexture;
+	[SerializeField,Tooltip("Just for testing. We have issues with y-flipping in main display.")] bool _testBlitSbsInCustomPass = false;
 
 	Camera _camera;
 	OffAxisCamera _offAxisCamera;
@@ -83,6 +85,16 @@ public class StereoHackEnabler : MonoBehaviour
 
 		RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
 
+		// ALTERNATIVE: Use CustomPass to do the xr->sbs blit.
+		if( _testBlitSbsInCustomPass ){
+			var customPass = gameObject.AddComponent<CustomPassVolume>();
+			customPass.injectionPoint = CustomPassInjectionPoint.AfterPostProcess;
+			var stereoPass = customPass.AddPassOfType<StereoHackCustomPass>();
+			stereoPass.name = "StereoHackCustomPass";
+			stereoPass.targetColorBuffer = CustomPass.TargetBuffer.None;
+			stereoPass.targetDepthBuffer = CustomPass.TargetBuffer.None;
+		}
+
 		_instance = this;
 	 }
 
@@ -100,7 +112,7 @@ public class StereoHackEnabler : MonoBehaviour
 	public XRPass CreateXRPass()
 	{
 		TextureXR.maxViews = 2;
-		TextureXR.GetBlackTextureArray();
+		//TextureXR.GetBlackTextureArray();
 
 		ScriptableCullingParameters cullingParams;
 		_camera.TryGetCullingParameters( out cullingParams );
@@ -160,7 +172,7 @@ public class StereoHackEnabler : MonoBehaviour
 		if( camera.cameraType != CameraType.Game ) return;
 
 		// Render single pass stereo render texture array to SBS stereo texture.
-		_cmd.Blit( _cameraStereoTextureArray, _targetSbsStereoTexture, _blitMaterial, 0 );
+		if( !_testBlitSbsInCustomPass ) _cmd.Blit( _cameraStereoTextureArray, _targetSbsStereoTexture, _blitMaterial, 0 );
 
 		// Draw UI on top of everything.
 		var uiRenderlist = ctx.CreateUIOverlayRendererList( camera, UISubset.UIToolkit_UGUI );
