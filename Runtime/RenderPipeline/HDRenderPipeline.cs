@@ -2413,15 +2413,15 @@ namespace UnityEngine.Rendering.HighDefinition
 
 							// CEC EDIT: No default mirrow view thank you.
                             // Render XR mirror view once all render requests have been completed
-							if( !( StereoHackEnabler.instance && StereoHackEnabler.instance.isActiveAndEnabled ) ){
-								if (isLast && renderRequest.hdCamera.camera.cameraType == CameraType.Game && renderRequest.hdCamera.camera.targetTexture == null)
-								{
-								    if (HDUtils.TryGetAdditionalCameraDataOrDefault(renderRequest.hdCamera.camera).xrRendering)
-								    {
-								        XRSystem.RenderMirrorView(cmd, renderRequest.hdCamera.camera);
-								    }
-								}
-							}
+							//if( !( StereoHackEnabler.instance && StereoHackEnabler.instance.isActiveAndEnabled ) ){
+							//	if (isLast && renderRequest.hdCamera.camera.cameraType == CameraType.Game && renderRequest.hdCamera.camera.targetTexture == null)
+							//	{
+							//	    if (HDUtils.TryGetAdditionalCameraDataOrDefault(renderRequest.hdCamera.camera).xrRendering)
+							//	    {
+							//	        XRSystem.RenderMirrorView(cmd, renderRequest.hdCamera.camera);
+							//	    }
+							//	}
+							//}
 
                             // Let's make sure to keep track of lights that will generate screen space shadows.
                             CollectScreenSpaceShadowData();
