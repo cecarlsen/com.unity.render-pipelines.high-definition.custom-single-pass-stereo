@@ -31,12 +31,16 @@ public class StereoHackEnabler : MonoBehaviour
 
 	RenderTargetIdentifier _cameraRenderTargetId;
 
+
 	static StereoHackEnabler _instance;
 
 	const string ENABLE_VR = nameof( ENABLE_VR );
 	const string ENABLE_XR_MODULE = nameof( ENABLE_XR_MODULE );
+
 	const GraphicsFormat _hdrpColorFormat = GraphicsFormat.B10G11R11_UFloatPack32; // HDRP default color format.
-	const GraphicsFormat _hdrpMotionVectorFormat = GraphicsFormat.R32_SFloat; // HDRP default motion vector format.
+	const GraphicsFormat _hdrpDepthStencilFormat = GraphicsFormat.D32_SFloat_S8_UInt; // HDRP default depth stencil format.
+	const GraphicsFormat _hdrpMotionVectorFormat = GraphicsFormat.R16G16_SFloat; // HDRP default motion vector format.
+	const GraphicsFormat _hdrpMotionVectorDepthStencilFormat = GraphicsFormat.None; // HDRP default motion vector depth stencil format.
 
 
 	public static StereoHackEnabler instance => _instance;
@@ -72,6 +76,7 @@ public class StereoHackEnabler : MonoBehaviour
 		if( !_offAxisCamera ) throw new Exception( "OffAxisCamera component not found on main camera." );
 
 		_cmd = new CommandBuffer();
+		_cmd.name = "StereoHack CopySliceToSbsStereoTexture";
 		_cameraRenderTargetId = new RenderTargetIdentifier( BuiltinRenderTextureType.CameraTarget );
 
 		Shader shader = Shader.Find( "Hidden/StereoHackSbsBlit" );
@@ -80,8 +85,8 @@ public class StereoHackEnabler : MonoBehaviour
 		_blitMaterial.hideFlags = HideFlags.HideAndDontSave;
 		if( Application.isEditor ) _blitMaterial.EnableKeyword( "_IS_EDITOR" ); // Quick workaround for flipped texture, only in editor.
 
-		_cameraStereoTextureArray = CreateTexArray( _perEyeResolution, _hdrpColorFormat, "StereoHackCameraTextureArray" );
-		_cameraStereoMotionVectorTextureArray = CreateTexArray( _perEyeResolution, _hdrpMotionVectorFormat, "StereoHackCameraMotionVectorTextureArray" );
+		_cameraStereoTextureArray = CreateTexArray( _perEyeResolution, _hdrpColorFormat, _hdrpDepthStencilFormat, "StereoHackCameraTextureArray" );
+		_cameraStereoMotionVectorTextureArray = CreateTexArray( _perEyeResolution, _hdrpMotionVectorFormat, _hdrpMotionVectorDepthStencilFormat, "StereoHackCameraMotionVectorTextureArray" );
 
 		RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
 
@@ -106,9 +111,14 @@ public class StereoHackEnabler : MonoBehaviour
 		_cameraStereoTextureArray?.Release();
 		_cameraStereoMotionVectorTextureArray?.Release();
 		_cmd.Dispose();
+
+		_cameraStereoTextureArray = null;
+		_cameraStereoMotionVectorTextureArray = null;
+		_cmd = null;
 	}
 
 
+	// Called from HDRenderPipeline.cs
 	public XRPass CreateXRPass()
 	{
 		TextureXR.maxViews = 2;
@@ -124,7 +134,7 @@ public class StereoHackEnabler : MonoBehaviour
 			motionVectorRenderTarget = new RenderTargetIdentifier( _cameraStereoMotionVectorTextureArray ),
 			motionVectorRenderTargetDesc = _cameraStereoMotionVectorTextureArray.descriptor,
 			cullingParameters = cullingParams,
-			occlusionMeshMaterial = null,
+			occlusionMeshMaterial = null, // Used to crop edges of head set view.
 			occlusionMeshScale = 1f,
 			renderTargetScaledWidth = _perEyeResolution.x,
 			renderTargetScaledHeight = _perEyeResolution.y,
@@ -135,9 +145,9 @@ public class StereoHackEnabler : MonoBehaviour
 			hasMotionVectorPass = true
 		};
 
-		var xr = XRPass.CreateDefault( createInfo );
-		xr.AddView( new XRView() );
-		xr.AddView( new XRView() );
+		var xrPass = XRPass.CreateDefault( createInfo ); // Apparently it's not our job to release the pass. If we do in OnDisable it will cause errors.
+		xrPass.AddView( new XRView() );
+		xrPass.AddView( new XRView() );
 
 		// Compute off-axis views.
 		var windowTransform = _offAxisCamera.windowTransform;
@@ -153,17 +163,17 @@ public class StereoHackEnabler : MonoBehaviour
 		Rect viewport = new Rect( 0, 0, _perEyeResolution.x, _perEyeResolution.y );
 
 		// Presuming we've modified SRP Core.
-		var xrViewLeft = new XRView( projectionLeft, viewLeft, _prevViewLeft, _hasPrevView, viewport, null, textureArraySlice: 0 );
-		var xrViewRight = new XRView( projectionRight, viewRight, _prevViewRight, _hasPrevView, viewport, null, textureArraySlice: 1 );
-		xr.AssignView( 0, xrViewLeft );
-		xr.AssignView( 1, xrViewRight );
+		var xrViewLeft = new XRView( projectionLeft, viewLeft, _prevViewLeft, _hasPrevView, viewport, occlusionMesh: null, textureArraySlice: 0 );
+		var xrViewRight = new XRView( projectionRight, viewRight, _prevViewRight, _hasPrevView, viewport, occlusionMesh: null, textureArraySlice: 1 );
+		xrPass.AssignView( 0, xrViewLeft );
+		xrPass.AssignView( 1, xrViewRight );
 
 		// Prepare next frame.
 		_prevViewLeft = viewLeft;
 		_prevViewRight = viewRight;
 		_hasPrevView = true;
 
-		return xr;
+		return xrPass;
 	}
 
 
@@ -186,9 +196,9 @@ public class StereoHackEnabler : MonoBehaviour
 	}
 
 
-	static RenderTexture CreateTexArray( Vector2Int resolution, GraphicsFormat format, string name )
+	static RenderTexture CreateTexArray( Vector2Int resolution, GraphicsFormat colorFormat, GraphicsFormat depthStencilFormat, string name )
 	{
-		var tex = new RenderTexture( resolution.x, resolution.y, 24, format );
+		var tex = new RenderTexture( resolution.x, resolution.y, colorFormat, depthStencilFormat );
 		tex.dimension = TextureDimension.Tex2DArray;
 		tex.volumeDepth = 2;
 		tex.name = name;

@@ -2215,13 +2215,13 @@ namespace UnityEngine.Rendering.HighDefinition
                 foreach (var c in cameras){
 					// CEC EDIT.
                     //xrLayout.AddCamera(c, HDUtils.TryGetAdditionalCameraDataOrDefault(c).xrRendering);
-					bool useStereoHack = c.cameraType == CameraType.Game && StereoHackEnabler.instance;
+					bool useStereoHack = c.cameraType == CameraType.Game && StereoHackEnabler.instance && StereoHackEnabler.instance.isActiveAndEnabled;
 					if( useStereoHack ){
 						// Use our own XRPass for stereo hack.
 						xrLayout.AddPass( c, StereoHackEnabler.instance.CreateXRPass() );
 					} else {
 						// The AddCamera() method invokes AddPass().
-						xrLayout.AddCamera(c, HDUtils.TryGetAdditionalCameraDataOrDefault(c).xrRendering);
+						xrLayout.AddCamera( c, HDUtils.TryGetAdditionalCameraDataOrDefault(c).xrRendering );
 					}
 				}
 
@@ -2413,13 +2413,15 @@ namespace UnityEngine.Rendering.HighDefinition
 
 							// CEC EDIT: No default mirrow view thank you.
                             // Render XR mirror view once all render requests have been completed
-                            //if (isLast && renderRequest.hdCamera.camera.cameraType == CameraType.Game && renderRequest.hdCamera.camera.targetTexture == null)
-                            //{
-                            //    if (HDUtils.TryGetAdditionalCameraDataOrDefault(renderRequest.hdCamera.camera).xrRendering)
-                            //    {
-                            //        XRSystem.RenderMirrorView(cmd, renderRequest.hdCamera.camera);
-                            //    }
-                            //}
+							if( !( StereoHackEnabler.instance && StereoHackEnabler.instance.isActiveAndEnabled ) ){
+								if (isLast && renderRequest.hdCamera.camera.cameraType == CameraType.Game && renderRequest.hdCamera.camera.targetTexture == null)
+								{
+								    if (HDUtils.TryGetAdditionalCameraDataOrDefault(renderRequest.hdCamera.camera).xrRendering)
+								    {
+								        XRSystem.RenderMirrorView(cmd, renderRequest.hdCamera.camera);
+								    }
+								}
+							}
 
                             // Let's make sure to keep track of lights that will generate screen space shadows.
                             CollectScreenSpaceShadowData();
