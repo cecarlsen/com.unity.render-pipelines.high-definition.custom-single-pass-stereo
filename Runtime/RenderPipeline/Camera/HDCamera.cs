@@ -594,7 +594,7 @@ namespace UnityEngine.Rendering.HighDefinition
         internal SkyAmbientMode skyAmbientMode { get; private set; }
 
         // XR multipass and instanced views are supported (see XRSystem)
-        internal XRPass xr { get; private set; }
+        public XRPass xr { get; private set; } // CEC EDIT
 
         internal float globalMipBias { set; get; } = 0.0f;
 

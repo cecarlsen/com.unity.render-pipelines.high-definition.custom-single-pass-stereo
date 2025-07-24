@@ -37,11 +37,12 @@ public class StereoHackEnabler : MonoBehaviour
 	const string ENABLE_VR = nameof( ENABLE_VR );
 	const string ENABLE_XR_MODULE = nameof( ENABLE_XR_MODULE );
 
-	const GraphicsFormat _hdrpColorFormat = GraphicsFormat.B10G11R11_UFloatPack32; // HDRP default color format.
-	const GraphicsFormat _hdrpDepthStencilFormat = GraphicsFormat.D32_SFloat_S8_UInt; // HDRP default depth stencil format.
-	const GraphicsFormat _hdrpMotionVectorFormat = GraphicsFormat.R16G16_SFloat; // HDRP default motion vector format.
-	const GraphicsFormat _hdrpMotionVectorDepthStencilFormat = GraphicsFormat.None; // HDRP default motion vector depth stencil format.
-
+	const GraphicsFormat hdrpColorFormat = GraphicsFormat.R8G8B8A8_SRGB;// GraphicsFormat.B10G11R11_UFloatPack32; // HDRP default color format.
+	const GraphicsFormat hdrpDepthStencilFormat = GraphicsFormat.D32_SFloat_S8_UInt; // HDRP default depth stencil format.
+	const int hdrpDepthBufferBits = 32;
+	const GraphicsFormat hdrpMotionVectorFormat = GraphicsFormat.R8G8B8A8_UNorm;// GraphicsFormat.R16G16_SFloat; // HDRP default motion vector format.
+	const GraphicsFormat hdrpMotionVectorDepthStencilFormat = GraphicsFormat.D32_SFloat_S8_UInt;// GraphicsFormat.None; // HDRP default motion vector depth stencil format.
+	const int hdrpMotionVectorDepthBufferBits = 32;
 
 	public static StereoHackEnabler instance => _instance;
 
@@ -67,13 +68,14 @@ public class StereoHackEnabler : MonoBehaviour
 	void OnEnable()
 	{
 		if( !_targetSbsStereoTexture ) throw new Exception( "Target SBS stereo texture not set." );
-		if( _targetSbsStereoTexture.graphicsFormat != _hdrpColorFormat ) throw new Exception( $"Target SBS stereo texture must be {_hdrpColorFormat}." );
+		if( _targetSbsStereoTexture.graphicsFormat != hdrpColorFormat ) throw new Exception( $"Target SBS stereo texture must be {hdrpColorFormat}." );
 
 		_camera = Camera.main;
 		if( !_camera ) throw new Exception( "Main camera not found." );
 
 		_offAxisCamera = _camera.GetComponent<OffAxisCamera>();
 		if( !_offAxisCamera ) throw new Exception( "OffAxisCamera component not found on main camera." );
+		if( !_offAxisCamera.enabled ) _offAxisCamera.enabled = true; // Ensure it is enabled.
 
 		_cmd = new CommandBuffer();
 		_cmd.name = "StereoHack CopySliceToSbsStereoTexture";
@@ -85,8 +87,12 @@ public class StereoHackEnabler : MonoBehaviour
 		_blitMaterial.hideFlags = HideFlags.HideAndDontSave;
 		if( Application.isEditor ) _blitMaterial.EnableKeyword( "_IS_EDITOR" ); // Quick workaround for flipped texture, only in editor.
 
-		_cameraStereoTextureArray = CreateTexArray( _perEyeResolution, _hdrpColorFormat, _hdrpDepthStencilFormat, "StereoHackCameraTextureArray" );
-		_cameraStereoMotionVectorTextureArray = CreateTexArray( _perEyeResolution, _hdrpMotionVectorFormat, _hdrpMotionVectorDepthStencilFormat, "StereoHackCameraMotionVectorTextureArray" );
+		_cameraStereoTextureArray = CreateTexArray(
+			_perEyeResolution, hdrpColorFormat, hdrpDepthStencilFormat, hdrpDepthBufferBits, VRTextureUsage.TwoEyes, "StereoHackCameraTextureArray"
+		);
+		_cameraStereoMotionVectorTextureArray = CreateTexArray(
+			_perEyeResolution, hdrpMotionVectorFormat, hdrpMotionVectorDepthStencilFormat, hdrpMotionVectorDepthBufferBits, VRTextureUsage.None, "StereoHackCameraMotionVectorTextureArray"
+		);
 
 		RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
 
@@ -110,7 +116,7 @@ public class StereoHackEnabler : MonoBehaviour
 
 		_cameraStereoTextureArray?.Release();
 		_cameraStereoMotionVectorTextureArray?.Release();
-		_cmd.Dispose();
+		if( _cmd != null ) _cmd.Dispose();
 
 		_cameraStereoTextureArray = null;
 		_cameraStereoMotionVectorTextureArray = null;
@@ -127,6 +133,16 @@ public class StereoHackEnabler : MonoBehaviour
 		ScriptableCullingParameters cullingParams;
 		_camera.TryGetCullingParameters( out cullingParams );
 
+		// Necessary?
+		//XRSystem.SetDisplayZRange( _camera.nearClipPlane, _camera.farClipPlane );
+
+		// Disable legacy stereo culling path. As in XRPass.AssignCullingParams().
+		cullingParams.cullingOptions &= ~CullingOptions.Stereo;
+
+		// Use mono camera view projection for culling. Otherwise we will see artifacts in volumetric fog and perhaps other effects.
+		cullingParams.stereoViewMatrix = _camera.worldToCameraMatrix;
+		cullingParams.stereoProjectionMatrix = _camera.projectionMatrix;
+
 		var createInfo = new XRPassCreateInfo()
 		{
 			renderTarget = new RenderTargetIdentifier( _cameraStereoTextureArray ),
@@ -141,13 +157,15 @@ public class StereoHackEnabler : MonoBehaviour
 			foveatedRenderingInfo = IntPtr.Zero,
 			multipassId = 0,
 			cullingPassId = -1,
-			copyDepth = false,
+			copyDepth = true, // This is true for vanilla MockHMD and it will trigger a DepthCopy in HDRenderPipeline.RenderGraph.cs. on line 391.
 			hasMotionVectorPass = true
 		};
 
 		var xrPass = XRPass.CreateDefault( createInfo ); // Apparently it's not our job to release the pass. If we do in OnDisable it will cause errors.
 		xrPass.AddView( new XRView() );
 		xrPass.AddView( new XRView() );
+
+		
 
 		// Compute off-axis views.
 		var windowTransform = _offAxisCamera.windowTransform;
@@ -196,12 +214,14 @@ public class StereoHackEnabler : MonoBehaviour
 	}
 
 
-	static RenderTexture CreateTexArray( Vector2Int resolution, GraphicsFormat colorFormat, GraphicsFormat depthStencilFormat, string name )
+	static RenderTexture CreateTexArray( Vector2Int resolution, GraphicsFormat colorFormat, GraphicsFormat depthStencilFormat, int depthBufferBits, VRTextureUsage vrUsage, string name )
 	{
 		var tex = new RenderTexture( resolution.x, resolution.y, colorFormat, depthStencilFormat );
 		tex.dimension = TextureDimension.Tex2DArray;
 		tex.volumeDepth = 2;
 		tex.name = name;
+		tex.depth = depthBufferBits;
+		tex.vrUsage = vrUsage;
 		tex.Create();
 		return tex;
 	}

@@ -46,7 +46,7 @@ Based on Unity 6000.1.0f1 and HDRP 17.1.0 April 22, 2025. BEWARE that Unity is n
 
 ## What was changed in HDRP?
 
-- Modified *HDRenderPipeline.cs* and *HDRenderPipeline.RenderGraph.cs*. Changes are marked with "CEC EDIT".
+- Modified *HDRenderPipeline.cs* and *HDRenderPipeline.RenderGraph.cs*. Changes are marked with "// CEC EDIT".
 - Added reference to OffAxisCamera in the Unity.RenderPipelines.HighDefinition.Runtime.asmdef.
 - Added some files in Runtime/StereoHack/.
 - Added this readme.
