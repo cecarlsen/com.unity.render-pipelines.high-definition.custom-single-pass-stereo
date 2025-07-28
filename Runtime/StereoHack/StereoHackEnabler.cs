@@ -37,7 +37,7 @@ public class StereoHackEnabler : MonoBehaviour
 	const string ENABLE_VR = nameof( ENABLE_VR );
 	const string ENABLE_XR_MODULE = nameof( ENABLE_XR_MODULE );
 
-	const GraphicsFormat hdrpColorFormat = GraphicsFormat.R8G8B8A8_SRGB;// GraphicsFormat.B10G11R11_UFloatPack32; // HDRP default color format.
+	const GraphicsFormat hdrpColorFormat = GraphicsFormat.B10G11R11_UFloatPack32;// GraphicsFormat.R8G8B8A8_SRGB; // HDRP default color format.
 	const GraphicsFormat hdrpDepthStencilFormat = GraphicsFormat.D32_SFloat_S8_UInt; // HDRP default depth stencil format.
 	const int hdrpDepthBufferBits = 32;
 	const GraphicsFormat hdrpMotionVectorFormat = GraphicsFormat.R8G8B8A8_UNorm;// GraphicsFormat.R16G16_SFloat; // HDRP default motion vector format.
