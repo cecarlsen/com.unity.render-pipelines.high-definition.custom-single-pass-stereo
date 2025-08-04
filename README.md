@@ -4,7 +4,7 @@
 
 This is a hack for instanced single pass stereo with custom views in HDRP for supporting stereoscopic displays and video projections that need user dependent perspective rendering.
 
-In broad strokes, the approach is to add a custom XRPass to XRLayout during HDRenderPipeline.Render() and use OnEndCameraRendering to blit to a SBS texture.
+In broad strokes, the approach is to add a custom XRPass to XRLayout during HDRenderPipeline.Render() and use OnEndCameraRendering to blit to a SBS texture. "Normally" a XRDisplaySubsystem from a XR Provider plugin is supposed to provide the XRPass.
 
 The officially recommended solution is to write and compile your own OpenXR provider ([NOT](https://discussions.unity.com/t/using-unity-xr-sdk-to-build-my-own-ar-plug-in/904304/13) a XR Provider plugin as has been previosly stated). Yes, writing a plugin ... just to do the equivalent of the (now obsolete) camera.SetStereoViewMatrices() and camera.SetStereoProjectionMatrices() methods.
 
@@ -12,7 +12,11 @@ Based on Unity 6000.1.0f1 and HDRP 17.1.0 April 22, 2025. BEWARE that Unity is n
 
 ![HdrpCustomSinglePassStereo](https://github.com/cecarlsen/com.unity.render-pipelines.high-definition.custom-single-pass-stereo/blob/main/GithubImages~/HdrpCustomSinglePassStereo.png)
 
-## How to avoid writing a plugin
+## Known issues
+
+- When building, UI targeting additional displays will be visually flipped, while the UI input coordinates will not. My hunch is that this has to do with the fact that we don't have a XRDisplaySubsystem defined. 
+
+## Instructions
 
 - 1) **Modify Scriptable Render Pipeline Core**.
 	- Install *High Definition Render Pipeline* using the package manager. This will automatically install *Scriptable Render Pipeline Core*.
@@ -22,7 +26,7 @@ Based on Unity 6000.1.0f1 and HDRP 17.1.0 April 22, 2025. BEWARE that Unity is n
 			- */Runtime/XR/XRPass.css*
 				- Make all fields of XRPassCreateInfo public.
 				- Since we don't have a XRDisplaySubsystem:
-					- Make the isHDRDisplayOutputActive property always return false.
+					- Make the isHDRDisplayOutputActive property always return true. This will flip the stereo texture.
 					- Make the hdrDisplayOutputColorGamut property always return ColorGamut.sRGB.
 					- Make the hdrDisplayOutputInformation always return new HDROutputUtils.HDRDisplayInformation( -1, 1000, 0, 160f ). 
 				- Make the AssignView() method public.

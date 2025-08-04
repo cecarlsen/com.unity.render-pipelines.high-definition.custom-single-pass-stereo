@@ -15,7 +15,7 @@ Shader "Hidden/StereoHackSbsBlit"
 		#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 		#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/HDROutput.hlsl"
 
-		#pragma multi_compile_local __ _IS_EDITOR
+		//#pragma multi_compile_local __ _IS_EDITOR
 
 		TEXTURE2D_ARRAY( _MainTex );
 		SamplerState sampler_LinearClamp;
@@ -45,9 +45,9 @@ Shader "Hidden/StereoHackSbsBlit"
 			output.texcoord   = GetFullScreenTriangleTexCoord( input.vertexID );
 
 			// Flip y. For some reason the y coordinate it not flipped in builds. TODO: find out why.
-			#ifdef _IS_EDITOR
+			//#ifdef _IS_EDITOR
 				output.texcoord.y = 1.0 - output.texcoord.y;
-			#endif
+			//#endif
 
 			// Stretch x2 horizontally to fit the two eyes.
 			output.texcoord.x *= 2.0;

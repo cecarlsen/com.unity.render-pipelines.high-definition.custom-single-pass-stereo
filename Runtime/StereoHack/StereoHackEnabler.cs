@@ -18,6 +18,7 @@ public class StereoHackEnabler : MonoBehaviour
 	[SerializeField] RenderTexture _targetSbsStereoTexture;
 	[SerializeField,Tooltip("Just for testing. We have issues with y-flipping in main display.")] bool _testBlitSbsInCustomPass = false;
 
+
 	Camera _camera;
 	OffAxisCamera _offAxisCamera;
 	Matrix4x4 _prevViewLeft, _prevViewRight;
@@ -37,7 +38,7 @@ public class StereoHackEnabler : MonoBehaviour
 	const string ENABLE_VR = nameof( ENABLE_VR );
 	const string ENABLE_XR_MODULE = nameof( ENABLE_XR_MODULE );
 
-	const GraphicsFormat hdrpColorFormat = GraphicsFormat.B10G11R11_UFloatPack32;// GraphicsFormat.R8G8B8A8_SRGB; // HDRP default color format.
+	const GraphicsFormat hdrpColorFormat = GraphicsFormat.B10G11R11_UFloatPack32;// GraphicsFormat.B10G11R11_UFloatPack32;// GraphicsFormat.R8G8B8A8_SRGB; // HDRP default color format. MockHMD uses R8G8B8A8_SRGB.
 	const GraphicsFormat hdrpDepthStencilFormat = GraphicsFormat.D32_SFloat_S8_UInt; // HDRP default depth stencil format.
 	const int hdrpDepthBufferBits = 32;
 	const GraphicsFormat hdrpMotionVectorFormat = GraphicsFormat.R8G8B8A8_UNorm;// GraphicsFormat.R16G16_SFloat; // HDRP default motion vector format.
@@ -67,16 +68,18 @@ public class StereoHackEnabler : MonoBehaviour
 
 	void OnEnable()
 	{
+		// Checks.
 		if( !_targetSbsStereoTexture ) throw new Exception( "Target SBS stereo texture not set." );
 		if( _targetSbsStereoTexture.graphicsFormat != hdrpColorFormat ) throw new Exception( $"Target SBS stereo texture must be {hdrpColorFormat}." );
 
+		// Get components.
 		_camera = Camera.main;
 		if( !_camera ) throw new Exception( "Main camera not found." );
-
 		_offAxisCamera = _camera.GetComponent<OffAxisCamera>();
 		if( !_offAxisCamera ) throw new Exception( "OffAxisCamera component not found on main camera." );
 		if( !_offAxisCamera.enabled ) _offAxisCamera.enabled = true; // Ensure it is enabled.
 
+		// Create resources.
 		_cmd = new CommandBuffer();
 		_cmd.name = "StereoHack CopySliceToSbsStereoTexture";
 		_cameraRenderTargetId = new RenderTargetIdentifier( BuiltinRenderTextureType.CameraTarget );
@@ -85,7 +88,7 @@ public class StereoHackEnabler : MonoBehaviour
 		if( !shader ) throw new Exception( "Shader 'Hidden/StereoHackSbsBlit' not found." );
 		_blitMaterial = new Material( shader );
 		_blitMaterial.hideFlags = HideFlags.HideAndDontSave;
-		if( Application.isEditor ) _blitMaterial.EnableKeyword( "_IS_EDITOR" ); // Quick workaround for flipped texture, only in editor.
+		//if( Application.isEditor ) _blitMaterial.EnableKeyword( "_IS_EDITOR" ); // Quick workaround for flipped texture, only in editor.
 
 		_cameraStereoTextureArray = CreateTexArray(
 			_perEyeResolution, hdrpColorFormat, hdrpDepthStencilFormat, hdrpDepthBufferBits, VRTextureUsage.TwoEyes, "StereoHackCameraTextureArray"
@@ -94,6 +97,7 @@ public class StereoHackEnabler : MonoBehaviour
 			_perEyeResolution, hdrpMotionVectorFormat, hdrpMotionVectorDepthStencilFormat, hdrpMotionVectorDepthBufferBits, VRTextureUsage.None, "StereoHackCameraMotionVectorTextureArray"
 		);
 
+		// Subscribe to events.
 		RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
 
 		// ALTERNATIVE: Use CustomPass to do the xr->sbs blit.
@@ -106,6 +110,7 @@ public class StereoHackEnabler : MonoBehaviour
 			stereoPass.targetDepthBuffer = CustomPass.TargetBuffer.None;
 		}
 
+		// Done.
 		_instance = this;
 	 }
 
@@ -131,9 +136,10 @@ public class StereoHackEnabler : MonoBehaviour
 		//TextureXR.GetBlackTextureArray();
 
 		ScriptableCullingParameters cullingParams;
-		_camera.TryGetCullingParameters( out cullingParams );
+		//_camera.TryGetCullingParameters( stereoAware: true, out cullingParams );
+		_camera.TryGetCullingParameters( out cullingParams ); // Default is stereoAware: false. Not sure what difference it makes.
 
-		// Necessary?
+		// Necessary? This just forward the values to the native XR device.
 		//XRSystem.SetDisplayZRange( _camera.nearClipPlane, _camera.farClipPlane );
 
 		// Disable legacy stereo culling path. As in XRPass.AssignCullingParams().
@@ -142,6 +148,7 @@ public class StereoHackEnabler : MonoBehaviour
 		// Use mono camera view projection for culling. Otherwise we will see artifacts in volumetric fog and perhaps other effects.
 		cullingParams.stereoViewMatrix = _camera.worldToCameraMatrix;
 		cullingParams.stereoProjectionMatrix = _camera.projectionMatrix;
+		cullingParams.stereoSeparationDistance = _eyeSeparation;
 
 		var createInfo = new XRPassCreateInfo()
 		{
@@ -156,7 +163,7 @@ public class StereoHackEnabler : MonoBehaviour
 			renderTargetScaledHeight = _perEyeResolution.y,
 			foveatedRenderingInfo = IntPtr.Zero,
 			multipassId = 0,
-			cullingPassId = -1,
+			cullingPassId = 0, // -1
 			copyDepth = true, // This is true for vanilla MockHMD and it will trigger a DepthCopy in HDRenderPipeline.RenderGraph.cs. on line 391.
 			hasMotionVectorPass = true
 		};
@@ -164,8 +171,6 @@ public class StereoHackEnabler : MonoBehaviour
 		var xrPass = XRPass.CreateDefault( createInfo ); // Apparently it's not our job to release the pass. If we do in OnDisable it will cause errors.
 		xrPass.AddView( new XRView() );
 		xrPass.AddView( new XRView() );
-
-		
 
 		// Compute off-axis views.
 		var windowTransform = _offAxisCamera.windowTransform;
@@ -199,10 +204,13 @@ public class StereoHackEnabler : MonoBehaviour
 	{
 		if( camera.cameraType != CameraType.Game ) return;
 
+		//var hdCam = HDCamera.GetOrCreate( camera );
+		//hdCam.m_AdditionalCameraData.flipYMode = HDAdditionalCameraData.FlipYMode.Automatic;
+
 		// Render single pass stereo render texture array to SBS stereo texture.
 		if( !_testBlitSbsInCustomPass ) _cmd.Blit( _cameraStereoTextureArray, _targetSbsStereoTexture, _blitMaterial, 0 );
 
-		// Draw UI on top of everything.
+		// Draw UI on top of the HDRP camera display target.
 		var uiRenderlist = ctx.CreateUIOverlayRendererList( camera, UISubset.UIToolkit_UGUI );
 		_cmd.SetRenderTarget( _cameraRenderTargetId );
 		_cmd.ClearRenderTarget( true, true, Color.black );
@@ -210,6 +218,7 @@ public class StereoHackEnabler : MonoBehaviour
 
 		// Execute.
 		Graphics.ExecuteCommandBuffer( _cmd );
+
 		_cmd.Clear();
 	}
 

@@ -2223,7 +2223,14 @@ namespace UnityEngine.Rendering.HighDefinition
 						// The AddCamera() method invokes AddPass().
 						xrLayout.AddCamera( c, HDUtils.TryGetAdditionalCameraDataOrDefault(c).xrRendering );
 					}
+
 				}
+
+				// CEC Test
+				//if( xrLayout.GetActivePasses().Count > 0 && xrLayout.GetActivePasses()[0].Item2.viewCount > 0 ){
+				//	var pass = xrLayout.GetActivePasses()[0].Item2;
+				//	Debug.Log( "GetProjMatrix: " + pass.GetProjMatrix() );
+				//}	
 
 #if UNITY_EDITOR
                 // See comment below about the preview camera workaround
@@ -2248,12 +2255,6 @@ namespace UnityEngine.Rendering.HighDefinition
                 {
                     if (camera == null)
                         continue;
-
-					//if( camera.cameraType == CameraType.Game && StereoHackEnabler.instance ){
-					//	xrPass = StereoHackEnabler.instance.CreateXRPass();
-					//}
-
-					//if( camera.cameraType == CameraType.Game ) Debug.Log( camera.name + " xrPass.enabled: " + xrPass.enabled );
 
 #if UNITY_EDITOR
                     // We selecting a camera in the editor, we have a preview that is drawn.

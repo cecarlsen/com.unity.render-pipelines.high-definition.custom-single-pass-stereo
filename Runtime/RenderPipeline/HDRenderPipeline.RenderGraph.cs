@@ -94,10 +94,6 @@ namespace UnityEngine.Rendering.HighDefinition
 
                 UpdateParentExposure(m_RenderGraph, hdCamera);
 
-				// CEC backBuffer is the xr target, so the single pass texture array! hdCamera.xr.renderTarget == target.id.
-				// What is color buffer then?
-				//Debug.Log( target.id + " AND " + renderRequest.hdCamera.xr.renderTarget );
-
                 TextureHandle backBuffer = m_RenderGraph.ImportBackbuffer(target.id);
                 TextureHandle colorBuffer = CreateColorBuffer(m_RenderGraph, hdCamera, msaa, true);
                 m_NonMSAAColorBuffer = CreateColorBuffer(m_RenderGraph, hdCamera, false);
@@ -270,8 +266,7 @@ namespace UnityEngine.Rendering.HighDefinition
                     colorBuffer = RenderTransparency(m_RenderGraph, hdCamera, colorBuffer, prepassOutput.resolvedNormalBuffer, vtFeedbackBuffer, currentColorPyramid, volumetricLighting, rayCountTexture, opticalFogTransmittance,
                         m_SkyManager.GetSkyReflection(hdCamera), gpuLightListOutput, transparentPrepass, ref prepassOutput, shadowResult, cullingResults, customPassCullingResults, aovRequest, aovCustomPassBuffers);
 
-					// CEC EDIT
-					uiBuffer = m_RenderGraph.defaultResources.blackTextureXR;
+					// CEC EDIT. No UI when hack is present please. We render this in StereoHackEnabler on OnEndCameraRendering.
                     //uiBuffer = RenderTransparentUI(m_RenderGraph, hdCamera);
 
                     if (NeedMotionVectorForTransparent(hdCamera.frameSettings))
@@ -455,8 +450,8 @@ namespace UnityEngine.Rendering.HighDefinition
 
 				//Debug.Log( "renderRequest.isLast: " + renderRequest.isLast);
                if (renderRequest.isLast){
-					// CEC EDIT: No UI please when hack is present. We render this in StereoHackEnabler on OnEndCameraRendering.
-                	if( !StereoHackEnabler.instance ) RenderScreenSpaceOverlayUI(m_RenderGraph, hdCamera, backBuffer);
+					// CEC EDIT: No UI when hack is present please. We render this in StereoHackEnabler on OnEndCameraRendering.
+                	if( !( StereoHackEnabler.instance && StereoHackEnabler.instance.isActiveAndEnabled ) ) RenderScreenSpaceOverlayUI(m_RenderGraph, hdCamera, backBuffer);
 				}
 				else
 				{
