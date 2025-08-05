@@ -10,13 +10,17 @@ using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.HighDefinition;
+using UnityEngine.UI;
 
 public class StereoHackEnabler : MonoBehaviour
 {
 	[SerializeField] float _eyeSeparation = 0.064f;
+	[SerializeField] bool _force2D = false;
+	[SerializeField] bool _swapEyes = false;
 	[SerializeField] Vector2Int _perEyeResolution = new Vector2Int( 1920, 1080 );
 	[SerializeField] RenderTexture _targetSbsStereoTexture;
 	[SerializeField,Tooltip("Just for testing. We have issues with y-flipping in main display.")] bool _testBlitSbsInCustomPass = false;
+	[SerializeField] Toggle _swapEyesToggle;
 
 
 	Camera _camera;
@@ -44,6 +48,16 @@ public class StereoHackEnabler : MonoBehaviour
 	const GraphicsFormat hdrpMotionVectorFormat = GraphicsFormat.R8G8B8A8_UNorm;// GraphicsFormat.R16G16_SFloat; // HDRP default motion vector format.
 	const GraphicsFormat hdrpMotionVectorDepthStencilFormat = GraphicsFormat.D32_SFloat_S8_UInt;// GraphicsFormat.None; // HDRP default motion vector depth stencil format.
 	const int hdrpMotionVectorDepthBufferBits = 32;
+
+	public bool florce2D {
+		get => _force2D;
+		set { _force2D = value; }
+	}
+
+	public bool swapEyes {
+		get => _swapEyes;
+		set { _swapEyes = value; }
+	}
 
 	public static StereoHackEnabler instance => _instance;
 
@@ -129,6 +143,17 @@ public class StereoHackEnabler : MonoBehaviour
 	}
 
 
+	void Start()
+	{
+		// Set swap eyes state on toggle.
+		if( _swapEyesToggle )
+		{
+			_swapEyesToggle.SetIsOnWithoutNotify( _swapEyes );
+			_swapEyesToggle.onValueChanged.AddListener( isOn => _swapEyes = isOn );
+		}
+	}
+
+
 	// Called from HDRenderPipeline.cs
 	public XRPass CreateXRPass()
 	{
@@ -148,7 +173,7 @@ public class StereoHackEnabler : MonoBehaviour
 		// Use mono camera view projection for culling. Otherwise we will see artifacts in volumetric fog and perhaps other effects.
 		cullingParams.stereoViewMatrix = _camera.worldToCameraMatrix;
 		cullingParams.stereoProjectionMatrix = _camera.projectionMatrix;
-		cullingParams.stereoSeparationDistance = _eyeSeparation;
+		cullingParams.stereoSeparationDistance = _force2D ? 0f : _eyeSeparation;
 
 		var createInfo = new XRPassCreateInfo()
 		{
@@ -177,9 +202,10 @@ public class StereoHackEnabler : MonoBehaviour
 		var windowSize = new Vector2( windowTransform.lossyScale.x, windowTransform.lossyScale.y );
 		var windowPosition = windowTransform.position;
 		var windowRotation = windowTransform.rotation;
-		float eyeSeperationExtents = _eyeSeparation * 0.5f;
-		var positionLeft = _camera.transform.position - _camera.transform.right * eyeSeperationExtents;
-		var positionRight = _camera.transform.position + _camera.transform.right * eyeSeperationExtents;
+		float eyeSeperationExtents = _force2D ? 0f : _eyeSeparation * 0.5f;
+		float eyeSign = _swapEyes ? -1f : 1f; // Swap eyes if requested.
+		var positionLeft = _camera.transform.position + ( _camera.transform.right * eyeSeperationExtents * -eyeSign );
+		var positionRight = _camera.transform.position + ( _camera.transform.right * eyeSeperationExtents * eyeSign );
 		Matrix4x4 viewLeft = Matrix4x4.identity, viewRight = Matrix4x4.identity, projectionLeft = Matrix4x4.identity, projectionRight = Matrix4x4.identity;
 		OffAxisUtils.ComputeOffAxisCameraMatrices( positionLeft, windowPosition, windowRotation, windowSize, _camera.nearClipPlane, _camera.farClipPlane, ref viewLeft, ref projectionLeft );
 		OffAxisUtils.ComputeOffAxisCameraMatrices( positionRight, windowPosition, windowRotation, windowSize, _camera.nearClipPlane, _camera.farClipPlane, ref viewRight, ref projectionRight );
