@@ -26,7 +26,7 @@ Based on Unity 6000.1.0f1 and HDRP 17.1.0 April 22, 2025. BEWARE that Unity is n
 			- */Runtime/XR/XRPass.css*
 				- Make all fields of XRPassCreateInfo public.
 				- Since we don't have a XRDisplaySubsystem:
-					- Make the isHDRDisplayOutputActive property always return true. This will flip the stereo texture.
+					- Make the isHDRDisplayOutputActive property always return false. Setting it to true will give missing color space conversion errors in build.
 					- Make the hdrDisplayOutputColorGamut property always return ColorGamut.sRGB.
 					- Make the hdrDisplayOutputInformation always return new HDROutputUtils.HDRDisplayInformation( -1, 1000, 0, 160f ). 
 				- Make the AssignView() method public.
