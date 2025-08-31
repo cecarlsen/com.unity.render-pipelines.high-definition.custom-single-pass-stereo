@@ -17,7 +17,6 @@ public class StereoHackEnabler : MonoBehaviour
 	[SerializeField] float _eyeSeparation = 0.064f;
 	[SerializeField] bool _force2D = false;
 	[SerializeField] bool _swapEyes = false;
-	[SerializeField] Vector2Int _perEyeResolution = new Vector2Int( 1920, 1080 );
 	[SerializeField] RenderTexture _targetSbsStereoTexture;
 	[SerializeField,Tooltip("Just for testing. We have issues with y-flipping in main display.")] bool _testBlitSbsInCustomPass = false;
 	[SerializeField] Toggle _swapEyesToggle;
@@ -36,6 +35,7 @@ public class StereoHackEnabler : MonoBehaviour
 
 	RenderTargetIdentifier _cameraRenderTargetId;
 
+	Vector2Int _perEyeResolution;
 
 	static StereoHackEnabler _instance;
 
@@ -85,6 +85,9 @@ public class StereoHackEnabler : MonoBehaviour
 		// Checks.
 		if( !_targetSbsStereoTexture ) throw new Exception( "Target SBS stereo texture not set." );
 		if( _targetSbsStereoTexture.graphicsFormat != hdrpColorFormat ) throw new Exception( $"Target SBS stereo texture must be {hdrpColorFormat}." );
+
+		// Get resolution.
+		_perEyeResolution = new Vector2Int( _targetSbsStereoTexture.width/2, _targetSbsStereoTexture.height );
 
 		// Get components.
 		_camera = Camera.main;
