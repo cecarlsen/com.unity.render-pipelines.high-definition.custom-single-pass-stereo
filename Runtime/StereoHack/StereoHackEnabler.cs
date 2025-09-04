@@ -49,7 +49,7 @@ public class StereoHackEnabler : MonoBehaviour
 	const GraphicsFormat hdrpMotionVectorDepthStencilFormat = GraphicsFormat.D32_SFloat_S8_UInt;// GraphicsFormat.None; // HDRP default motion vector depth stencil format.
 	const int hdrpMotionVectorDepthBufferBits = 32;
 
-	public bool florce2D {
+	public bool force2D {
 		get => _force2D;
 		set { _force2D = value; }
 	}
@@ -57,6 +57,11 @@ public class StereoHackEnabler : MonoBehaviour
 	public bool swapEyes {
 		get => _swapEyes;
 		set { _swapEyes = value; }
+	}
+
+	public float eyeSeparation {
+		get => _eyeSeparation;
+		set { _eyeSeparation = value; }
 	}
 
 	public static StereoHackEnabler instance => _instance;
