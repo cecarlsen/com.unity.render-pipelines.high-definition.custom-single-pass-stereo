@@ -102,14 +102,12 @@ public class StereoHackEnabler : MonoBehaviour
 		if( !_offAxisCamera.enabled ) _offAxisCamera.enabled = true; // Ensure it is enabled.
 
 		// Create resources.
-		_cmd = new CommandBuffer();
-		_cmd.name = "StereoHack CopySliceToSbsStereoTexture";
+		_cmd = new CommandBuffer(){ name = "StereoHack CopySliceToSbsStereoTexture" };
 		_cameraRenderTargetId = new RenderTargetIdentifier( BuiltinRenderTextureType.CameraTarget );
 
 		Shader shader = Shader.Find( "Hidden/StereoHackSbsBlit" );
 		if( !shader ) throw new Exception( "Shader 'Hidden/StereoHackSbsBlit' not found." );
-		_blitMaterial = new Material( shader );
-		_blitMaterial.hideFlags = HideFlags.HideAndDontSave;
+		_blitMaterial = new Material( shader ){ hideFlags = HideFlags.HideAndDontSave };
 		//if( Application.isEditor ) _blitMaterial.EnableKeyword( "_IS_EDITOR" ); // Quick workaround for flipped texture, only in editor.
 
 		_cameraStereoTextureArray = CreateTexArray(
@@ -236,7 +234,7 @@ public class StereoHackEnabler : MonoBehaviour
 
 	void OnEndCameraRendering( ScriptableRenderContext ctx, Camera camera )
 	{
-		if( camera.cameraType != CameraType.Game ) return;
+		if( camera.cameraType != CameraType.Game || !camera.GetComponent<HDAdditionalCameraData>().xrRendering ) return;
 
 		//var hdCam = HDCamera.GetOrCreate( camera );
 		//hdCam.m_AdditionalCameraData.flipYMode = HDAdditionalCameraData.FlipYMode.Automatic;
@@ -259,12 +257,14 @@ public class StereoHackEnabler : MonoBehaviour
 
 	static RenderTexture CreateTexArray( Vector2Int resolution, GraphicsFormat colorFormat, GraphicsFormat depthStencilFormat, int depthBufferBits, VRTextureUsage vrUsage, string name )
 	{
-		var tex = new RenderTexture( resolution.x, resolution.y, colorFormat, depthStencilFormat );
-		tex.dimension = TextureDimension.Tex2DArray;
-		tex.volumeDepth = 2;
-		tex.name = name;
-		tex.depth = depthBufferBits;
-		tex.vrUsage = vrUsage;
+		var tex = new RenderTexture( resolution.x, resolution.y, colorFormat, depthStencilFormat)
+		{
+			dimension = TextureDimension.Tex2DArray,
+			volumeDepth = 2,
+			name = name,
+			depth = depthBufferBits,
+			vrUsage = vrUsage,
+		};
 		tex.Create();
 		return tex;
 	}

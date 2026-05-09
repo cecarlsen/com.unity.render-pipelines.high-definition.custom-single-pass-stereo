@@ -2215,7 +2215,10 @@ namespace UnityEngine.Rendering.HighDefinition
                 foreach (var c in cameras){
 					// CEC EDIT.
                     //xrLayout.AddCamera(c, HDUtils.TryGetAdditionalCameraDataOrDefault(c).xrRendering);
-					bool useStereoHack = c.cameraType == CameraType.Game && StereoHackEnabler.instance && StereoHackEnabler.instance.isActiveAndEnabled;
+					bool useStereoHack =
+						c.cameraType == CameraType.Game &&
+						HDUtils.TryGetAdditionalCameraDataOrDefault(c).xrRendering &&
+						StereoHackEnabler.instance && StereoHackEnabler.instance.isActiveAndEnabled;
 					if( useStereoHack ){
 						// Use our own XRPass for stereo hack.
 						xrLayout.AddPass( c, StereoHackEnabler.instance.CreateXRPass() );
